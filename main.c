@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "SDL.h"
+#include "qrcodegen.h"
 
 static const char* APP_NAME = "SDL2 QR Code";
 static int INITIAL_WIDTH    = 1280;
