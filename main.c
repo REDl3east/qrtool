@@ -3,6 +3,8 @@
 #include "SDL.h"
 #include "qrcodegen.h"
 
+#include "SDL_image.h"
+
 static const char* APP_NAME = "SDL2 QR Code";
 static int INITIAL_WIDTH    = 1280;
 static int INITIAL_HEIGHT   = 720;
@@ -39,11 +41,14 @@ SDL_Surface* SDL_CreateQrSurface(const char* text, uint8_t dr, uint8_t dg, uint8
   return surface;
 }
 
-
-
 int main(int argv, char** argc) {
   if (SDL_Init(SDL_INIT_VIDEO) != 0) {
     printf("[ERROR] %s\n", SDL_GetError());
+    return 1;
+  }
+
+  if (IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG) {
+    printf("[ERROR] IMG_Init: %s\n", IMG_GetError());
     return 1;
   }
 
@@ -132,6 +137,7 @@ int main(int argv, char** argc) {
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
 
+  IMG_Quit();
   SDL_Quit();
 
   return 0;

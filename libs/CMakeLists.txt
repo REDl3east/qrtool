@@ -7,6 +7,19 @@ FetchContent_Declare(
 )
 
 FetchContent_Declare(
+  SDL2_IMAGE
+  GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
+  GIT_TAG a861543ab78f5d5e18e6af43964ce8df60cb30b3
+)
+
+set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL "" FORCE)
+set(SDL2IMAGE_VENDORED ON CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(SDL2IMAGE_INSTALL OFF CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(SDL2 SDL2_IMAGE)
+
+FetchContent_Declare(
   qr_code_gen
   GIT_REPOSITORY https://github.com/nayuki/QR-Code-generator.git
   GIT_TAG 720f62bddb7226106071d4728c292cb1df519ceb
@@ -24,4 +37,3 @@ if(NOT qr_code_gen_POPULATED)
 
 endif()
 
-FetchContent_MakeAvailable(SDL2)
