@@ -7,7 +7,7 @@ static const char* APP_NAME = "SDL2 QR Code";
 static int INITIAL_WIDTH    = 1280;
 static int INITIAL_HEIGHT   = 720;
 
-SDL_Surface* SDL_CreateQrSurface(const char* text, int px_per_point, uint8_t dr, uint8_t dg, uint8_t db, uint8_t da, uint8_t lr, uint8_t lg, uint8_t lb, uint8_t la) {
+SDL_Surface* SDL_CreateQrSurface(const char* text, uint8_t dr, uint8_t dg, uint8_t db, uint8_t da, uint8_t lr, uint8_t lg, uint8_t lb, uint8_t la) {
   uint8_t qrcode[qrcodegen_BUFFER_LEN_MAX];
   uint8_t tempBuffer[qrcodegen_BUFFER_LEN_MAX];
   bool ok = qrcodegen_encodeText(text, tempBuffer, qrcode, qrcodegen_Ecc_HIGH, qrcodegen_VERSION_MIN, qrcodegen_VERSION_MAX, qrcodegen_Mask_AUTO, true);
@@ -18,7 +18,7 @@ SDL_Surface* SDL_CreateQrSurface(const char* text, int px_per_point, uint8_t dr,
 
   int qr_size = qrcodegen_getSize(qrcode);
 
-  SDL_Surface* surface = SDL_CreateRGBSurface(0, qr_size * px_per_point, qr_size * px_per_point, 32, 0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff);
+  SDL_Surface* surface = SDL_CreateRGBSurface(0, qr_size, qr_size, 32, 0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff);
   if (surface == NULL) {
     return NULL;
   }
@@ -27,7 +27,7 @@ SDL_Surface* SDL_CreateQrSurface(const char* text, int px_per_point, uint8_t dr,
 
   for (int x = 0; x < qr_size; x++) {
     for (int y = 0; y < qr_size; y++) {
-      SDL_Rect r1 = {x * px_per_point, y * px_per_point, px_per_point, px_per_point};
+      SDL_Rect r1 = {x, y, 1, 1};
       if (qrcodegen_getModule(qrcode, x, y)) {
         SDL_FillRect(surface, &r1, SDL_MapRGBA(surface->format, dr, dg, db, da));
       } else {
@@ -38,6 +38,8 @@ SDL_Surface* SDL_CreateQrSurface(const char* text, int px_per_point, uint8_t dr,
 
   return surface;
 }
+
+
 
 int main(int argv, char** argc) {
   if (SDL_Init(SDL_INIT_VIDEO) != 0) {
@@ -64,15 +66,15 @@ int main(int argv, char** argc) {
     return 1;
   }
 
-  const char* text = "WIFI:S:Aspen;T:WPA;P:Overmyer!5;;";
+  const char* text = "https://google.com";
 
-  SDL_Surface* surface = SDL_CreateQrSurface(text, 2, 0, 0, 0, 255, 255, 255, 255, 255);
-  if (!surface) {
+  SDL_Surface* qr_surface = SDL_CreateQrSurface(text, 0, 0, 0, 255, 255, 255, 255, 255);
+  if (!qr_surface) {
     printf("[ERROR] SDL_CreateQrSurface\n");
     return 1;
   }
 
-  SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+  SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, qr_surface);
   if (texture == NULL) {
     printf("SDL_CreateTextureFromSurface: %s\n", SDL_GetError());
     return 1;
@@ -119,14 +121,14 @@ int main(int argv, char** argc) {
     SDL_SetRenderDrawColor(renderer, 0xe2, 0x7d, 0x60, 255);
     SDL_RenderClear(renderer);
 
-    SDL_Rect r2 = {0.5 * (INITIAL_WIDTH - 512), 0.5 * (INITIAL_HEIGHT - 512), 512, 512};
+    SDL_Rect r2 = {0.5 * (INITIAL_WIDTH - qr_surface->w * 10), 0.5 * (INITIAL_HEIGHT - qr_surface->h * 10), qr_surface->w * 10, qr_surface->h * 10};
 
     SDL_RenderCopy(renderer, texture, NULL, &r2);
 
     SDL_RenderPresent(renderer);
   }
 
-  SDL_FreeSurface(surface);
+  SDL_FreeSurface(qr_surface);
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
 
