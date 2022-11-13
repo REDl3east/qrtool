@@ -9,37 +9,7 @@ static const char* APP_NAME = "SDL2 QR Code";
 static int INITIAL_WIDTH    = 1280;
 static int INITIAL_HEIGHT   = 720;
 
-SDL_Surface* SDL_CreateQrSurface(const char* text, uint8_t dr, uint8_t dg, uint8_t db, uint8_t da, uint8_t lr, uint8_t lg, uint8_t lb, uint8_t la) {
-  uint8_t qrcode[qrcodegen_BUFFER_LEN_MAX];
-  uint8_t tempBuffer[qrcodegen_BUFFER_LEN_MAX];
-  bool ok = qrcodegen_encodeText(text, tempBuffer, qrcode, qrcodegen_Ecc_HIGH, qrcodegen_VERSION_MIN, qrcodegen_VERSION_MAX, qrcodegen_Mask_AUTO, true);
-
-  if (!ok) {
-    return NULL;
-  }
-
-  int qr_size = qrcodegen_getSize(qrcode);
-
-  SDL_Surface* surface = SDL_CreateRGBSurface(0, qr_size, qr_size, 32, 0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff);
-  if (surface == NULL) {
-    return NULL;
-  }
-
-  SDL_SetSurfaceBlendMode(surface, SDL_BLENDMODE_BLEND);
-
-  for (int x = 0; x < qr_size; x++) {
-    for (int y = 0; y < qr_size; y++) {
-      SDL_Rect r1 = {x, y, 1, 1};
-      if (qrcodegen_getModule(qrcode, x, y)) {
-        SDL_FillRect(surface, &r1, SDL_MapRGBA(surface->format, dr, dg, db, da));
-      } else {
-        SDL_FillRect(surface, &r1, SDL_MapRGBA(surface->format, lr, lg, lb, la));
-      }
-    }
-  }
-
-  return surface;
-}
+SDL_Surface* SDL_CreateQrSurface(const char* text, uint8_t fr, uint8_t fg, uint8_t fb, uint8_t fa, uint8_t br, uint8_t bg, uint8_t bb, uint8_t ba);
 
 int main(int argv, char** argc) {
   if (SDL_Init(SDL_INIT_VIDEO) != 0) {
@@ -52,7 +22,7 @@ int main(int argv, char** argc) {
     return 1;
   }
 
-  Uint32 flags       = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI;
+  Uint32 flags       = SDL_WINDOW_RESIZABLE;
   SDL_Window* window = SDL_CreateWindow(APP_NAME, INITIAL_WIDTH * 0.25, INITIAL_HEIGHT * 0.25, INITIAL_WIDTH, INITIAL_HEIGHT, flags);
 
   if (!window) {
@@ -126,7 +96,7 @@ int main(int argv, char** argc) {
     SDL_SetRenderDrawColor(renderer, 0xe2, 0x7d, 0x60, 255);
     SDL_RenderClear(renderer);
 
-    SDL_Rect r2 = {0.5 * (INITIAL_WIDTH - qr_surface->w * 10), 0.5 * (INITIAL_HEIGHT - qr_surface->h * 10), qr_surface->w * 10, qr_surface->h * 10};
+    SDL_Rect r2 = {0.5 * (INITIAL_WIDTH - 512), 0.5 * (INITIAL_HEIGHT - 512), 512, 512};
 
     SDL_RenderCopy(renderer, texture, NULL, &r2);
 
@@ -141,4 +111,36 @@ int main(int argv, char** argc) {
   SDL_Quit();
 
   return 0;
+}
+
+SDL_Surface* SDL_CreateQrSurface(const char* text, uint8_t fr, uint8_t fg, uint8_t fb, uint8_t fa, uint8_t br, uint8_t bg, uint8_t bb, uint8_t ba) {
+  uint8_t qrcode[qrcodegen_BUFFER_LEN_MAX];
+  uint8_t tempBuffer[qrcodegen_BUFFER_LEN_MAX];
+  bool ok = qrcodegen_encodeText(text, tempBuffer, qrcode, qrcodegen_Ecc_HIGH, qrcodegen_VERSION_MIN, qrcodegen_VERSION_MAX, qrcodegen_Mask_AUTO, true);
+
+  if (!ok) {
+    return NULL;
+  }
+
+  int qr_size = qrcodegen_getSize(qrcode);
+
+  SDL_Surface* surface = SDL_CreateRGBSurface(0, qr_size, qr_size, 32, 0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff);
+  if (surface == NULL) {
+    return NULL;
+  }
+
+  SDL_SetSurfaceBlendMode(surface, SDL_BLENDMODE_BLEND);
+
+  for (int x = 0; x < qr_size; x++) {
+    for (int y = 0; y < qr_size; y++) {
+      SDL_Rect r1 = {x, y, 1, 1};
+      if (qrcodegen_getModule(qrcode, x, y)) {
+        SDL_FillRect(surface, &r1, SDL_MapRGBA(surface->format, fr, fg, fb, fa));
+      } else {
+        SDL_FillRect(surface, &r1, SDL_MapRGBA(surface->format, br, bg, bb, ba));
+      }
+    }
+  }
+
+  return surface;
 }
