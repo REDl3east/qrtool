@@ -19,7 +19,8 @@ Cmake will take care of SDL2 and SDL_image, so you really only need the correct 
 
 A command line tool that generates cool qr codes.
 
-command line options:  
+### command line options:  
+
 -f, --foreground [HEX | RGB() | RGBA()]  
 -b, --background [HEX | RGB() | RGBA()]  
 -t, --input-text INPUT (Input should also be obtained via stdin. If this option is absent, then it will grab data from stdin.)  
