@@ -42,4 +42,6 @@ A command line tool that generates cool qr codes.
     --padding-inner (The padding for inside the border.)  
 -t, --title  
 
+### Thoughts
+
 * Give stdin a maximum
