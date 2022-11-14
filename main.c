@@ -17,7 +17,7 @@ typedef struct RGBA {
 } RGBA;
 
 typedef struct QrAttr {
-  const char* input;
+  char* input;
   enum qrcodegen_Ecc level;
   int boost_ecc;
   enum qrcodegen_Mask mask;
@@ -26,71 +26,47 @@ typedef struct QrAttr {
 } QrAttr;
 
 typedef struct QrData {
-  uint8_t* qrcode;
+  uint8_t qrcode[qrcodegen_BUFFER_LEN_MAX];
   uint8_t size;
   QrAttr attr;
 } QrData;
 
-QrData* createQrCode(QrAttr* attr) {
+int createQrCode(QrData* qr, QrAttr* attr) {
   uint8_t qrcode[qrcodegen_BUFFER_LEN_MAX];
   uint8_t tempBuffer[qrcodegen_BUFFER_LEN_MAX];
   bool ok = qrcodegen_encodeText(attr->input, tempBuffer, qrcode, attr->level, attr->version_min, attr->version_max, attr->mask, attr->boost_ecc);
 
-  if (!ok) return NULL;
+  if (!ok) return -1;
 
-  QrData* data = malloc(sizeof(QrData));
-  if (data == NULL) return NULL;
+  memcpy(qr->qrcode, qrcode, sizeof(qrcode));
+  qr->size             = qrcodegen_getSize(qrcode);
+  qr->attr.level       = attr->level;
+  qr->attr.mask        = attr->mask;
+  qr->attr.version_max = attr->version_max;
+  qr->attr.version_min = attr->version_min;
+  qr->attr.boost_ecc   = attr->boost_ecc;
+  strcpy(qr->attr.input, attr->input);
 
-  data->size = qrcodegen_getSize(qrcode);
-  data->qrcode = malloc(sizeof(data->qrcode) * data->size * data->size);
-
-  if (data->qrcode == NULL) {
-    free(data);
-    return NULL;
-  }
-
-  data->attr = *attr;
-
-  for (int x = 0; x < data->size; x++) {
-    for (int y = 0; y < data->size; y++) {
-      if (qrcodegen_getModule(qrcode, x, y)) {
-        data->qrcode[y * data->size + x] = 1;
-      } else {
-        data->qrcode[y * data->size + x] = 0;
-      }
-    }
-  }
-
-  return data;
-}
-
-void destroyQrCode(QrData* data){
-  free(data->qrcode);
-  free(data);
+  return 0;
 }
 
 SDL_Surface* SDL_CreateQrSurface(const char* text, uint8_t fr, uint8_t fg, uint8_t fb, uint8_t fa, uint8_t br, uint8_t bg, uint8_t bb, uint8_t ba);
 
 int main(int argv, char** argc) {
-
   QrAttr attr;
-  attr.input = "Hello there";
-  attr.level = qrcodegen_Ecc_HIGH;
-  attr.mask = qrcodegen_Mask_AUTO;
+  attr.input       = "Hello there";
+  attr.level       = qrcodegen_Ecc_HIGH;
+  attr.mask        = qrcodegen_Mask_AUTO;
   attr.version_min = 1;
   attr.version_max = 40;
-  attr.boost_ecc = 1;
+  attr.boost_ecc   = 1;
 
-  QrData* data = createQrCode(&attr);
+  QrData qr;
+  createQrCode(&qr, &attr);
 
-  if(data == NULL){
-    printf("Failed to create QR code\n");
-    return 1;
-  }
-
-  for (int x = 0; x < data->size; x++) {
-    for (int y = 0; y < data->size; y++) {
-      if (data->qrcode[y * data->size + x]) {
+  for (int x = 0; x < qr.size; x++) {
+    for (int y = 0; y < qr.size; y++) {
+      if (qrcodegen_getModule(qr.qrcode, x, y)) {
         printf("**");
       } else {
         printf("  ");
@@ -98,8 +74,6 @@ int main(int argv, char** argc) {
     }
     printf("\n");
   }
-
-  destroyQrCode(data);
 
   // if (SDL_Init(SDL_INIT_VIDEO) != 0) {
   //   printf("[ERROR] %s\n", SDL_GetError());
