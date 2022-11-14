@@ -9,106 +9,195 @@ static const char* APP_NAME = "SDL2 QR Code";
 static int INITIAL_WIDTH    = 1280;
 static int INITIAL_HEIGHT   = 720;
 
+typedef struct RGBA {
+  int r;
+  int g;
+  int b;
+  int a;
+} RGBA;
+
+typedef struct QrAttr {
+  const char* input;
+  enum qrcodegen_Ecc level;
+  int boost_ecc;
+  enum qrcodegen_Mask mask;
+  int version_max;
+  int version_min;
+} QrAttr;
+
+typedef struct QrData {
+  uint8_t* qrcode;
+  uint8_t size;
+  QrAttr attr;
+} QrData;
+
+QrData* createQrCode(QrAttr* attr) {
+  uint8_t qrcode[qrcodegen_BUFFER_LEN_MAX];
+  uint8_t tempBuffer[qrcodegen_BUFFER_LEN_MAX];
+  bool ok = qrcodegen_encodeText(attr->input, tempBuffer, qrcode, attr->level, attr->version_min, attr->version_max, attr->mask, attr->boost_ecc);
+
+  if (!ok) return NULL;
+
+  QrData* data = malloc(sizeof(QrData));
+  if (data == NULL) return NULL;
+
+  data->size = qrcodegen_getSize(qrcode);
+  data->qrcode = malloc(sizeof(data->qrcode) * data->size * data->size);
+
+  if (data->qrcode == NULL) {
+    free(data);
+    return NULL;
+  }
+
+  data->attr = *attr;
+
+  for (int x = 0; x < data->size; x++) {
+    for (int y = 0; y < data->size; y++) {
+      if (qrcodegen_getModule(qrcode, x, y)) {
+        data->qrcode[y * data->size + x] = 1;
+      } else {
+        data->qrcode[y * data->size + x] = 0;
+      }
+    }
+  }
+
+  return data;
+}
+
+void destroyQrCode(QrData* data){
+  free(data->qrcode);
+  free(data);
+}
+
 SDL_Surface* SDL_CreateQrSurface(const char* text, uint8_t fr, uint8_t fg, uint8_t fb, uint8_t fa, uint8_t br, uint8_t bg, uint8_t bb, uint8_t ba);
 
 int main(int argv, char** argc) {
-  if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-    printf("[ERROR] %s\n", SDL_GetError());
+
+  QrAttr attr;
+  attr.input = "Hello there";
+  attr.level = qrcodegen_Ecc_HIGH;
+  attr.mask = qrcodegen_Mask_AUTO;
+  attr.version_min = 1;
+  attr.version_max = 40;
+  attr.boost_ecc = 1;
+
+  QrData* data = createQrCode(&attr);
+
+  if(data == NULL){
+    printf("Failed to create QR code\n");
     return 1;
   }
 
-  if (IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG) {
-    printf("[ERROR] IMG_Init: %s\n", IMG_GetError());
-    return 1;
-  }
-
-  Uint32 flags       = SDL_WINDOW_RESIZABLE;
-  SDL_Window* window = SDL_CreateWindow(APP_NAME, INITIAL_WIDTH * 0.25, INITIAL_HEIGHT * 0.25, INITIAL_WIDTH, INITIAL_HEIGHT, flags);
-
-  if (!window) {
-    printf("[ERROR] SDL_CreateWindow: %s\n", SDL_GetError());
-    return 1;
-  }
-
-  SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-  if (!renderer) {
-    printf("[ERROR] SDL_CreateRenderer: %s\n", SDL_GetError());
-    return 1;
-  }
-
-  if (SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND) < 0) {
-    printf("[ERROR] SDL_SetRenderDrawBlendMode: %s\n", SDL_GetError());
-    return 1;
-  }
-
-  const char* text = "https://google.com";
-
-  SDL_Surface* qr_surface = SDL_CreateQrSurface(text, 0, 0, 0, 255, 255, 255, 255, 255);
-  if (!qr_surface) {
-    printf("[ERROR] SDL_CreateQrSurface\n");
-    return 1;
-  }
-
-  SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, qr_surface);
-  if (texture == NULL) {
-    printf("SDL_CreateTextureFromSurface: %s\n", SDL_GetError());
-    return 1;
-  }
-
-  SDL_Point size;
-  SDL_QueryTexture(texture, NULL, NULL, &size.x, &size.y);
-  printf("generated QR code: %dx%d\n", size.x, size.y);
-
-  int done = 0;
-
-  while (!done) {
-    SDL_Event event;
-    while (SDL_PollEvent(&event)) {
-      if ((event.type == SDL_QUIT) ||
-          (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_q) ||
-          (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))) {
-        done = 1;
-      }
-      switch (event.type) {
-        case SDL_KEYDOWN: {
-          if (event.key.keysym.sym == SDLK_1) {
-            printf("%d\n", 1);
-          } else if (event.key.keysym.sym == SDLK_2) {
-            printf("%d\n", 2);
-          } else if (event.key.keysym.sym == SDLK_3) {
-            printf("%d\n", 3);
-          }
-
-          break;
-        }
-        case SDL_MOUSEWHEEL: {
-          // if (event.wheel.y > 0) {
-          //   scale += 0.1;
-          // } else if (event.wheel.y < 0) {
-          //   scale -= 0.1;
-          // }
-
-          break;
-        }
+  for (int x = 0; x < data->size; x++) {
+    for (int y = 0; y < data->size; y++) {
+      if (data->qrcode[y * data->size + x]) {
+        printf("**");
+      } else {
+        printf("  ");
       }
     }
-
-    SDL_SetRenderDrawColor(renderer, 0xe2, 0x7d, 0x60, 255);
-    SDL_RenderClear(renderer);
-
-    SDL_Rect r2 = {0.5 * (INITIAL_WIDTH - 512), 0.5 * (INITIAL_HEIGHT - 512), 512, 512};
-
-    SDL_RenderCopy(renderer, texture, NULL, &r2);
-
-    SDL_RenderPresent(renderer);
+    printf("\n");
   }
 
-  SDL_FreeSurface(qr_surface);
-  SDL_DestroyRenderer(renderer);
-  SDL_DestroyWindow(window);
+  destroyQrCode(data);
 
-  IMG_Quit();
-  SDL_Quit();
+  // if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+  //   printf("[ERROR] %s\n", SDL_GetError());
+  //   return 1;
+  // }
+
+  // if (IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG) {
+  //   printf("[ERROR] IMG_Init: %s\n", IMG_GetError());
+  //   return 1;
+  // }
+
+  // Uint32 flags       = SDL_WINDOW_RESIZABLE;
+  // SDL_Window* window = SDL_CreateWindow(APP_NAME, INITIAL_WIDTH * 0.25, INITIAL_HEIGHT * 0.25, INITIAL_WIDTH, INITIAL_HEIGHT, flags);
+
+  // if (!window) {
+  //   printf("[ERROR] SDL_CreateWindow: %s\n", SDL_GetError());
+  //   return 1;
+  // }
+
+  // SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+  // if (!renderer) {
+  //   printf("[ERROR] SDL_CreateRenderer: %s\n", SDL_GetError());
+  //   return 1;
+  // }
+
+  // if (SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND) < 0) {
+  //   printf("[ERROR] SDL_SetRenderDrawBlendMode: %s\n", SDL_GetError());
+  //   return 1;
+  // }
+
+  // const char* text = "https://google.com";
+
+  // SDL_Surface* qr_surface = SDL_CreateQrSurface(text, 0, 0, 0, 255, 255, 255, 255, 255);
+  // if (!qr_surface) {
+  //   printf("[ERROR] SDL_CreateQrSurface\n");
+  //   return 1;
+  // }
+
+  // SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, qr_surface);
+  // if (texture == NULL) {
+  //   printf("SDL_CreateTextureFromSurface: %s\n", SDL_GetError());
+  //   return 1;
+  // }
+
+  // SDL_Point size;
+  // SDL_QueryTexture(texture, NULL, NULL, &size.x, &size.y);
+  // printf("generated QR code: %dx%d\n", size.x, size.y);
+
+  // int done = 0;
+
+  // while (!done) {
+  //   SDL_Event event;
+  //   while (SDL_PollEvent(&event)) {
+  //     if ((event.type == SDL_QUIT) ||
+  //         (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_q) ||
+  //         (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))) {
+  //       done = 1;
+  //     }
+  //     switch (event.type) {
+  //       case SDL_KEYDOWN: {
+  //         if (event.key.keysym.sym == SDLK_1) {
+  //           printf("%d\n", 1);
+  //         } else if (event.key.keysym.sym == SDLK_2) {
+  //           printf("%d\n", 2);
+  //         } else if (event.key.keysym.sym == SDLK_3) {
+  //           printf("%d\n", 3);
+  //         }
+
+  //         break;
+  //       }
+  //       case SDL_MOUSEWHEEL: {
+  //         // if (event.wheel.y > 0) {
+  //         //   scale += 0.1;
+  //         // } else if (event.wheel.y < 0) {
+  //         //   scale -= 0.1;
+  //         // }
+
+  //         break;
+  //       }
+  //     }
+  //   }
+
+  //   SDL_SetRenderDrawColor(renderer, 0xe2, 0x7d, 0x60, 255);
+  //   SDL_RenderClear(renderer);
+
+  //   SDL_Rect r2 = {0.5 * (INITIAL_WIDTH - 512), 0.5 * (INITIAL_HEIGHT - 512), 512, 512};
+
+  //   SDL_RenderCopy(renderer, texture, NULL, &r2);
+
+  //   SDL_RenderPresent(renderer);
+  // }
+
+  // SDL_FreeSurface(qr_surface);
+  // SDL_DestroyRenderer(renderer);
+  // SDL_DestroyWindow(window);
+
+  // IMG_Quit();
+  // SDL_Quit();
 
   return 0;
 }
