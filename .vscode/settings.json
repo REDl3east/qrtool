@@ -1,6 +1,0 @@
-{
-  "files.associations": {
-    "*.tcc": "c",
-    "sdl_image.h": "c"
-  }
-}
