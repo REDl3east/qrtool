@@ -9,13 +9,6 @@ static const char* APP_NAME = "SDL2 QR Code";
 static int INITIAL_WIDTH    = 1280;
 static int INITIAL_HEIGHT   = 720;
 
-typedef struct RGBA {
-  int r;
-  int g;
-  int b;
-  int a;
-} RGBA;
-
 typedef struct QrAttr {
   char* input;
   enum qrcodegen_Ecc level;
@@ -31,179 +24,195 @@ typedef struct QrData {
   QrAttr attr;
 } QrData;
 
-int createQrCode(QrData* qr, QrAttr* attr) {
-  uint8_t qrcode[qrcodegen_BUFFER_LEN_MAX];
-  uint8_t tempBuffer[qrcodegen_BUFFER_LEN_MAX];
-  bool ok = qrcodegen_encodeText(attr->input, tempBuffer, qrcode, attr->level, attr->version_min, attr->version_max, attr->mask, attr->boost_ecc);
+typedef struct QrSurfaceAttr {
+  SDL_Color foreground;
+  SDL_Color background;
+  int size;
+} QrSurfaceAttr;
 
-  if (!ok) return -1;
+typedef struct QrSurface {
+  SDL_Surface* surface;
+  QrData qr;
+  QrSurfaceAttr attr;
+} QrSurface;
 
-  memcpy(qr->qrcode, qrcode, sizeof(qrcode));
-  qr->size             = qrcodegen_getSize(qrcode);
-  qr->attr.level       = attr->level;
-  qr->attr.mask        = attr->mask;
-  qr->attr.version_max = attr->version_max;
-  qr->attr.version_min = attr->version_min;
-  qr->attr.boost_ecc   = attr->boost_ecc;
-  strcpy(qr->attr.input, attr->input);
-
-  return 0;
-}
-
-SDL_Surface* SDL_CreateQrSurface(const char* text, uint8_t fr, uint8_t fg, uint8_t fb, uint8_t fa, uint8_t br, uint8_t bg, uint8_t bb, uint8_t ba);
+int createQrCode(QrData* qr);
+int createQrCodeSurface(QrSurface* qr_surface);
+int createQrCodeSurfaceScale(QrSurface* qr_surface, float scale);
+int createQrCodeSurfaceWithSize(QrSurface* qr_surface, int size);
+void destroyQrCodeSurface(QrSurface* qr_surface);
 
 int main(int argv, char** argc) {
-  QrAttr attr;
-  attr.input       = "Hello there";
-  attr.level       = qrcodegen_Ecc_HIGH;
-  attr.mask        = qrcodegen_Mask_AUTO;
-  attr.version_min = 1;
-  attr.version_max = 40;
-  attr.boost_ecc   = 1;
+  QrSurface qr_surface;
+  qr_surface.qr.attr.input       = "What are you looking at?";
+  qr_surface.qr.attr.level       = qrcodegen_Ecc_HIGH;
+  qr_surface.qr.attr.mask        = qrcodegen_Mask_AUTO;
+  qr_surface.qr.attr.version_min = 1;
+  qr_surface.qr.attr.version_max = 40;
+  qr_surface.qr.attr.boost_ecc   = 1;
 
-  QrData qr;
-  createQrCode(&qr, &attr);
+  qr_surface.attr.background = (SDL_Color){255, 255, 255, 255};
+  qr_surface.attr.foreground = (SDL_Color){0, 0, 0, 128};
+  // qr_surface.attr.size       = 37*10;
 
-  for (int x = 0; x < qr.size; x++) {
-    for (int y = 0; y < qr.size; y++) {
-      if (qrcodegen_getModule(qr.qrcode, x, y)) {
-        printf("**");
-      } else {
-        printf("  ");
-      }
-    }
-    printf("\n");
+  if (createQrCodeSurfaceScale(&qr_surface, 10.0) < 0) {
+    printf("[ERROR] createQrCodeSurface: %s\n", SDL_GetError());
+    return 1;
   }
 
-  // if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-  //   printf("[ERROR] %s\n", SDL_GetError());
-  //   return 1;
-  // }
+  if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+    printf("[ERROR] %s\n", SDL_GetError());
+    return 1;
+  }
 
-  // if (IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG) {
-  //   printf("[ERROR] IMG_Init: %s\n", IMG_GetError());
-  //   return 1;
-  // }
+  if (IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG) {
+    printf("[ERROR] IMG_Init: %s\n", IMG_GetError());
+    return 1;
+  }
 
-  // Uint32 flags       = SDL_WINDOW_RESIZABLE;
-  // SDL_Window* window = SDL_CreateWindow(APP_NAME, INITIAL_WIDTH * 0.25, INITIAL_HEIGHT * 0.25, INITIAL_WIDTH, INITIAL_HEIGHT, flags);
+  Uint32 flags       = SDL_WINDOW_RESIZABLE;
+  SDL_Window* window = SDL_CreateWindow(APP_NAME, INITIAL_WIDTH * 0.25, INITIAL_HEIGHT * 0.25, INITIAL_WIDTH, INITIAL_HEIGHT, flags);
 
-  // if (!window) {
-  //   printf("[ERROR] SDL_CreateWindow: %s\n", SDL_GetError());
-  //   return 1;
-  // }
+  if (!window) {
+    printf("[ERROR] SDL_CreateWindow: %s\n", SDL_GetError());
+    return 1;
+  }
 
-  // SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-  // if (!renderer) {
-  //   printf("[ERROR] SDL_CreateRenderer: %s\n", SDL_GetError());
-  //   return 1;
-  // }
+  SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+  if (!renderer) {
+    printf("[ERROR] SDL_CreateRenderer: %s\n", SDL_GetError());
+    return 1;
+  }
 
-  // if (SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND) < 0) {
-  //   printf("[ERROR] SDL_SetRenderDrawBlendMode: %s\n", SDL_GetError());
-  //   return 1;
-  // }
+  if (SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND) < 0) {
+    printf("[ERROR] SDL_SetRenderDrawBlendMode: %s\n", SDL_GetError());
+    return 1;
+  }
 
-  // const char* text = "https://google.com";
+  SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, qr_surface.surface);
+  if (texture == NULL) {
+    printf("SDL_CreateTextureFromSurface: %s\n", SDL_GetError());
+    return 1;
+  }
 
-  // SDL_Surface* qr_surface = SDL_CreateQrSurface(text, 0, 0, 0, 255, 255, 255, 255, 255);
-  // if (!qr_surface) {
-  //   printf("[ERROR] SDL_CreateQrSurface\n");
-  //   return 1;
-  // }
+  SDL_Point size;
+  SDL_QueryTexture(texture, NULL, NULL, &size.x, &size.y);
+  printf("Generated QR code: %dx%d, with texture: %dx%d\n", qr_surface.qr.size, qr_surface.qr.size, size.x, size.y);
 
-  // SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, qr_surface);
-  // if (texture == NULL) {
-  //   printf("SDL_CreateTextureFromSurface: %s\n", SDL_GetError());
-  //   return 1;
-  // }
+  int done = 0;
 
-  // SDL_Point size;
-  // SDL_QueryTexture(texture, NULL, NULL, &size.x, &size.y);
-  // printf("generated QR code: %dx%d\n", size.x, size.y);
+  while (!done) {
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+      if ((event.type == SDL_QUIT) ||
+          (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_q) ||
+          (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))) {
+        done = 1;
+      }
+      switch (event.type) {
+        case SDL_KEYDOWN: {
+          if (event.key.keysym.sym == SDLK_1) {
+            printf("%d\n", 1);
+          } else if (event.key.keysym.sym == SDLK_2) {
+            printf("%d\n", 2);
+          } else if (event.key.keysym.sym == SDLK_3) {
+            printf("%d\n", 3);
+          }
 
-  // int done = 0;
+          break;
+        }
+        case SDL_MOUSEWHEEL: {
+          // if (event.wheel.y > 0) {
+          //   scale += 0.1;
+          // } else if (event.wheel.y < 0) {
+          //   scale -= 0.1;
+          // }
 
-  // while (!done) {
-  //   SDL_Event event;
-  //   while (SDL_PollEvent(&event)) {
-  //     if ((event.type == SDL_QUIT) ||
-  //         (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_q) ||
-  //         (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))) {
-  //       done = 1;
-  //     }
-  //     switch (event.type) {
-  //       case SDL_KEYDOWN: {
-  //         if (event.key.keysym.sym == SDLK_1) {
-  //           printf("%d\n", 1);
-  //         } else if (event.key.keysym.sym == SDLK_2) {
-  //           printf("%d\n", 2);
-  //         } else if (event.key.keysym.sym == SDLK_3) {
-  //           printf("%d\n", 3);
-  //         }
+          break;
+        }
+      }
+    }
 
-  //         break;
-  //       }
-  //       case SDL_MOUSEWHEEL: {
-  //         // if (event.wheel.y > 0) {
-  //         //   scale += 0.1;
-  //         // } else if (event.wheel.y < 0) {
-  //         //   scale -= 0.1;
-  //         // }
+    SDL_SetRenderDrawColor(renderer, 0xe2, 0x7d, 0x60, 255);
+    SDL_RenderClear(renderer);
 
-  //         break;
-  //       }
-  //     }
-  //   }
+    SDL_Rect r2 = {0.5 * (INITIAL_WIDTH - qr_surface.attr.size), 0.5 * (INITIAL_HEIGHT - qr_surface.attr.size), qr_surface.attr.size, qr_surface.attr.size};
 
-  //   SDL_SetRenderDrawColor(renderer, 0xe2, 0x7d, 0x60, 255);
-  //   SDL_RenderClear(renderer);
+    SDL_RenderCopy(renderer, texture, NULL, &r2);
 
-  //   SDL_Rect r2 = {0.5 * (INITIAL_WIDTH - 512), 0.5 * (INITIAL_HEIGHT - 512), 512, 512};
+    SDL_RenderPresent(renderer);
+  }
 
-  //   SDL_RenderCopy(renderer, texture, NULL, &r2);
+  destroyQrCodeSurface(&qr_surface);
+  SDL_DestroyRenderer(renderer);
+  SDL_DestroyWindow(window);
 
-  //   SDL_RenderPresent(renderer);
-  // }
-
-  // SDL_FreeSurface(qr_surface);
-  // SDL_DestroyRenderer(renderer);
-  // SDL_DestroyWindow(window);
-
-  // IMG_Quit();
-  // SDL_Quit();
+  IMG_Quit();
+  SDL_Quit();
 
   return 0;
 }
 
-SDL_Surface* SDL_CreateQrSurface(const char* text, uint8_t fr, uint8_t fg, uint8_t fb, uint8_t fa, uint8_t br, uint8_t bg, uint8_t bb, uint8_t ba) {
-  uint8_t qrcode[qrcodegen_BUFFER_LEN_MAX];
+int createQrCode(QrData* qr) {
   uint8_t tempBuffer[qrcodegen_BUFFER_LEN_MAX];
-  bool ok = qrcodegen_encodeText(text, tempBuffer, qrcode, qrcodegen_Ecc_HIGH, qrcodegen_VERSION_MIN, qrcodegen_VERSION_MAX, qrcodegen_Mask_AUTO, true);
 
-  if (!ok) {
-    return NULL;
+  if (!qrcodegen_encodeText(qr->attr.input, tempBuffer, qr->qrcode, qr->attr.level, qr->attr.version_min, qr->attr.version_max, qr->attr.mask, qr->attr.boost_ecc)) {
+    return -1;
   }
 
-  int qr_size = qrcodegen_getSize(qrcode);
+  qr->size = qrcodegen_getSize(qr->qrcode);
 
-  SDL_Surface* surface = SDL_CreateRGBSurface(0, qr_size, qr_size, 32, 0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff);
-  if (surface == NULL) {
-    return NULL;
+  return 0;
+}
+
+int createQrCodeSurface(QrSurface* qr_surface) {
+  if (createQrCode(&qr_surface->qr) < 0) return -1;
+  return createQrCodeSurfaceWithSize(qr_surface, qr_surface->attr.size);
+}
+
+int createQrCodeSurfaceScale(QrSurface* qr_surface, float scale) {
+  if (createQrCode(&qr_surface->qr) < 0) return -1;
+  qr_surface->attr.size = (float)qr_surface->qr.size * scale;
+  return createQrCodeSurfaceWithSize(qr_surface, qr_surface->attr.size);
+}
+
+int createQrCodeSurfaceWithSize(QrSurface* qr_surface, int size) {
+  SDL_Surface* tmp_surface = SDL_CreateRGBSurface(0, qr_surface->qr.size, qr_surface->qr.size, 32, 0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff);
+  if (tmp_surface == NULL) {
+    return -1;
   }
 
-  SDL_SetSurfaceBlendMode(surface, SDL_BLENDMODE_BLEND);
+  SDL_SetSurfaceBlendMode(tmp_surface, SDL_BLENDMODE_BLEND);
 
-  for (int x = 0; x < qr_size; x++) {
-    for (int y = 0; y < qr_size; y++) {
+  for (int x = 0; x < qr_surface->qr.size; x++) {
+    for (int y = 0; y < qr_surface->qr.size; y++) {
       SDL_Rect r1 = {x, y, 1, 1};
-      if (qrcodegen_getModule(qrcode, x, y)) {
-        SDL_FillRect(surface, &r1, SDL_MapRGBA(surface->format, fr, fg, fb, fa));
+      if (qrcodegen_getModule(qr_surface->qr.qrcode, x, y)) {
+        SDL_FillRect(tmp_surface, &r1, SDL_MapRGBA(tmp_surface->format, qr_surface->attr.foreground.r, qr_surface->attr.foreground.g, qr_surface->attr.foreground.b, qr_surface->attr.foreground.a));
       } else {
-        SDL_FillRect(surface, &r1, SDL_MapRGBA(surface->format, br, bg, bb, ba));
+        SDL_FillRect(tmp_surface, &r1, SDL_MapRGBA(tmp_surface->format, qr_surface->attr.background.r, qr_surface->attr.background.g, qr_surface->attr.background.b, qr_surface->attr.background.a));
       }
     }
   }
 
-  return surface;
+  qr_surface->surface = SDL_CreateRGBSurface(0, size, size, 32, 0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff);
+  if (qr_surface->surface == NULL) {
+    SDL_FreeSurface(tmp_surface);
+    return -1;
+  }
+
+  SDL_SetSurfaceBlendMode(qr_surface->surface, SDL_BLENDMODE_BLEND);
+
+  if (SDL_BlitScaled(tmp_surface, NULL, qr_surface->surface, NULL) < 0) {
+    SDL_FreeSurface(tmp_surface);
+    return -1;
+  }
+
+  SDL_FreeSurface(tmp_surface);
+  return 0;
+}
+
+void destroyQrCodeSurface(QrSurface* qr_surface) {
+  SDL_FreeSurface(qr_surface->surface);
+  qr_surface->surface = NULL;
 }
