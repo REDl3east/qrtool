@@ -21,29 +21,23 @@ A command line tool that generates cool qr codes.
 
 ### command line options:  
 
-
 -t, --input-text INPUT (Input should also be obtained via stdin. If this option is absent, then it will grab data from stdin.)  
 -z, --error-correction-level [LOW | MEDIUM | QUARTILE | HIGH | L | M | Q | H]  
 -m, --mask [0 | 1 | 2 | 3 | 4 | 5 | 6 | 7] (If this option is absent, then the mask is automatically selected.)  
--i, --boost-ecc (Will increase the error correction level if needed.)  
+-a, --boost-ecc (Will increase the error correction level if needed.)  
 -n, --version-max-range (1-40) (If absent, set to 1.)  
 -x, --version-min-range (1-40) (If absent, set to 40.)  
 
--o, --output (Input can be outputted to an image file (png, jpeg, etc) or if this option is absent, then it will be outputted to stdout. If -e is absent, then the extension is inferred from the given string. If no extension is found, then it is set to a default.)  
+-o, --output (Input can be outputted to an image file (png, jpeg, etc) or if this option is absent, then it will be outputted to stdout. If -e is absent, then the extension is inferred from the given string. If no extension is found, then it is set to a default, probably PPM6.)  
 -e, --extension [PNG | JPEG | etc] (Extension of the file. Use this without -o option and the binary data will be outputted to stdout.)  
 -f, --foreground [HEX | RGB() | RGBA()]  
 -b, --background [HEX | RGB() | RGBA()]  
 
--v, --view (View the image in a window without saving it in any way.)  
--s, --scale (The scale of the outputted qr code.)  
--w, --width  
--h, --height  
--b, --border (The border type.)  
--c, --border-color (The border color.)  
--p, --padding-outer (The padding for outside the border.)  
-    --padding-inner (The padding for inside the border.)  
--t, --title  
+-s, --scale (The scale of the outputted qr code. Cannot have --size option)  
+-s, --size  (Cannot have --scale option)  
+-v, --verify  (View the image in a window without saving it in any way. Pressing 's' will save then quit, and 'q' will quit?)   
 
 ### Thoughts
 
 * Give stdin a maximum
+* Have a batch option for multiple text input.
