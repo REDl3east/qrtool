@@ -52,7 +52,7 @@ int main(int argv, char** argc) {
   qr_surface.qr.attr.boost_ecc   = 1;
 
   qr_surface.attr.background = (SDL_Color){255, 255, 255, 255};
-  qr_surface.attr.foreground = (SDL_Color){0, 0, 0, 128};
+  qr_surface.attr.foreground = (SDL_Color){0, 0, 0, 255};
   // qr_surface.attr.size       = 37*10;
 
   if (createQrCodeSurfaceScale(&qr_surface, 10.0) < 0) {
