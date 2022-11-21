@@ -28,13 +28,14 @@ A command line tool that generates cool qr codes.
 -n, --version-max-range (1-40) (If absent, set to 1.)  
 -x, --version-min-range (1-40) (If absent, set to 40.)  
 
--o, --output (Input can be outputted to an image file (png, jpeg, etc) or if this option is absent, then it will be outputted to stdout. If -e is absent, then the extension is inferred from the given string. If no extension is found, then it is set to a default, probably PPM6.)  
--e, --extension [PNG | JPEG | etc] (Extension of the file. Use this without -o option and the binary data will be outputted to stdout.)  
 -f, --foreground [HEX | RGB() | RGBA()]  
 -b, --background [HEX | RGB() | RGBA()]  
 
 -s, --scale (The scale of the outputted qr code. Cannot have --size option)  
 -s, --size  (Cannot have --scale option)  
+
+-o, --output (Input can be outputted to an image file (png, jpeg, etc) or if this option is absent, then it will be outputted to stdout. If -e is absent, then the extension is inferred from the given string. If no extension is found, then it is set to a default, probably PPM6.)
+-e, --extension [PNG | JPEG | etc] (Extension of the file. Use this without -o option and the binary data will be outputted to stdout.)    
 -v, --verify  (View the image in a window without saving it in any way. Pressing 'y' will save then quit, and 'n' will quit.)   
 
 ### Thoughts
