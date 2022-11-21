@@ -17,7 +17,13 @@ set(SDL2IMAGE_VENDORED ON CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(SDL2IMAGE_INSTALL OFF CACHE BOOL "" FORCE)
 
-FetchContent_MakeAvailable(SDL2 SDL2_IMAGE)
+FetchContent_Declare(
+  argtable3
+  GIT_REPOSITORY https://github.com/argtable/argtable3.git
+  GIT_TAG f25c624e3a5a65f4d1897aa7d51c897f8f8098d0
+)
+
+FetchContent_MakeAvailable(SDL2 SDL2_IMAGE argtable3)
 
 FetchContent_Declare(
   qr_code_gen
