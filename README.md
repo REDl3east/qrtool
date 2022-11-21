@@ -35,7 +35,7 @@ A command line tool that generates cool qr codes.
 
 -s, --scale (The scale of the outputted qr code. Cannot have --size option)  
 -s, --size  (Cannot have --scale option)  
--v, --verify  (View the image in a window without saving it in any way. Pressing 's' will save then quit, and 'q' will quit?)   
+-v, --verify  (View the image in a window without saving it in any way. Pressing 'y' will save then quit, and 'n' will quit.)   
 
 ### Thoughts
 
