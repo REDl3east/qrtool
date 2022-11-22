@@ -298,11 +298,17 @@ int main(int argc, char** argv) {
     }
   }
 
-  // qr_surface.attr.size       = 37*10;
-
-  if (createQrCodeSurfaceScale(&qr_surface, 10.0) < 0) {
-    printf("[ERROR] createQrCodeSurface: %s\n", SDL_GetError());
-    return 1;
+  if (qr_scale_arg->count > 0) {
+    int qr_scale = *qr_scale_arg->ival;
+    if (createQrCodeSurfaceScale(&qr_surface, qr_scale) < 0) {
+      printf("[ERROR] createQrCodeSurface: %s\n", SDL_GetError());
+      return 1;
+    }
+  } else {
+    if (createQrCodeSurfaceScale(&qr_surface, 1.0) < 0) {
+      printf("[ERROR] createQrCodeSurface: %s\n", SDL_GetError());
+      return 1;
+    }
   }
 
   if (SDL_Init(SDL_INIT_VIDEO) != 0) {
