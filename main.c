@@ -370,6 +370,9 @@ int main(int argc, char** argv) {
     SDL_SetRenderDrawColor(renderer, 0xe2, 0x7d, 0x60, 255);
     SDL_RenderClear(renderer);
 
+    // rgb(102,102,102) dark gray
+    // rgb(153,153,153) lighter gray
+
     SDL_Rect r2 = {0.5 * (INITIAL_WIDTH - qr_surface.attr.size), 0.5 * (INITIAL_HEIGHT - qr_surface.attr.size), qr_surface.attr.size, qr_surface.attr.size};
 
     SDL_RenderCopy(renderer, texture, NULL, &r2);
