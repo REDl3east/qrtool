@@ -39,5 +39,5 @@ A command line tool that generates cool qr codes.
 
 ### Thoughts
 
-* Give stdin a maximum
+* Draw background so we can see transparency
 * Have a batch option for multiple text input.
