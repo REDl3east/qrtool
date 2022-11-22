@@ -58,6 +58,24 @@ char* safe_strcpy(char* dest, size_t size, const char* src) {
   return dest;
 }
 
+void str_tolower(char* input) {
+  for (int i = 0; input[i]; i++) {
+    input[i] = tolower(input[i]);
+  }
+}
+
+bool ishex(char c) {
+  return c == '0' || c == '1' || c == '2' || c == '3' || c == '4' || c == '5' || c == '6' || c == '7' || c == '8' || c == '9' ||
+         c == 'a' || c == 'b' || c == 'c' || c == 'd' || c == 'e' || c == 'f';
+}
+
+bool str_ishex(const char* input) {
+  for (int i = 0; input[i]; i++) {
+    if (!ishex(tolower(input[i]))) return false;
+  }
+  return true;
+}
+
 int read_stdin(char* buffer, size_t max_size) {
   int total_bytes_read = 0;
   int nbytes_read      = 0;
@@ -84,18 +102,42 @@ int read_stdin(char* buffer, size_t max_size) {
   return total_bytes_read;
 }
 
+bool parse_color(const char* input, SDL_Color* color) {
+  int input_len = strlen(input);
+
+  if (input_len != 9 || input[0] != '#') {
+    return false;
+  }
+
+  if (!str_ishex(input + 1)) {
+    return false;
+  }
+
+  unsigned long value = strtoul(input + 1, NULL, 16);
+
+  color->a = (value >> 0) & 0xff;
+  color->b = (value >> 8) & 0xff;
+  color->g = (value >> 16) & 0xff;
+  color->r = (value >> 24) & 0xff;
+
+  return true;
+}
+
 int main(int argc, char** argv) {
-  struct arg_str* text_input_arg = arg_str0("t", "text-input", "INPUT", "The input text that will be used to generate the QR code");
-  // struct arg_lit* recurse  = arg_lit0("R", NULL, "recurse through subdirectories");
-  // struct arg_int* repeat   = arg_int0("k", "scalar", NULL, "define scalar value k (default is 3)");
-  // struct arg_str* defines  = arg_strn("D", "define", "MACRO", 0, argc + 2, "macro definitions");
-  // struct arg_file* outfile = arg_file0("o", NULL, "<output>", "output file (default is \"-\")");
-  // struct arg_lit* verbose  = arg_lit0("v", "verbose,debug", "verbose messages");
+  struct arg_str* text_input_arg  = arg_str0("t", "text-input", "INPUT", "The input text that will be used to generate the QR code");
+  struct arg_str* qr_level_arg    = arg_str0("z", "error-correction-level", "LEVEL", "The Error Correction Level of the QR Code. [LOW | MEDIUM | QUARTILE | HIGH | L | M | Q | H] (Default is high)");
+  struct arg_int* qr_mask_arg     = arg_int0("m", "mask", "MASK", "The mask used to generate the QR code. [0 | 1 | 2 | 3 | 4 | 5 | 6 | 7] (If this option is absent, then the mask is automatically selected)");
+  struct arg_lit* qr_boost_arg    = arg_lit0("a", "boost-ecc", "If present, this option will increase the error correction level if needed.");
+  struct arg_int* qr_max_arg      = arg_int0("x", "version-max-range", "NUM", "The max version of the QR code. (1-40 and if absent, default to 40)");
+  struct arg_int* qr_min_arg      = arg_int0("n", "version-min-range", "NUM", "The min version of the QR code. (1-40 and if absent, default to 1)");
+  struct arg_str* qr_fg_color_arg = arg_str0("f", "foreground-color", "COLOR", "The foreground color of the QR code. Use hex notation: #RRGGBBAA (Default is black)");
+  struct arg_str* qr_bg_color_arg = arg_str0("b", "background-color", "COLOR", "The background color of the QR code. Use hex notation: #RRGGBBAA (Default is white");
+  struct arg_int* qr_scale_arg    = arg_int0("s", "scale", "NUM", "The scale of the outputted qr code. (Default is 1)");
+
   struct arg_lit* help    = arg_lit0(NULL, "help", "print this help and exit");
   struct arg_lit* version = arg_lit0(NULL, "version", "print version information and exit");
-  // struct arg_file* infiles = arg_filen(NULL, NULL, NULL, 1, argc + 2, "input file(s)");
-  struct arg_end* end = arg_end(20);
-  void* argtable[]    = {text_input_arg, help, version, end};
+  struct arg_end* end     = arg_end(20);
+  void* argtable[]        = {text_input_arg, qr_level_arg, qr_mask_arg, qr_boost_arg, qr_max_arg, qr_min_arg, qr_fg_color_arg, qr_bg_color_arg, qr_scale_arg, help, version, end};
 
   if (arg_nullcheck(argtable) != 0) {
     printf("%s: insufficient memory\n", argv[0]);
@@ -126,6 +168,17 @@ int main(int argc, char** argv) {
 
   char text_input[MAX_TEXT_INPUT];
 
+  QrSurface qr_surface;
+  qr_surface.qr.attr.input       = text_input;
+  qr_surface.qr.attr.level       = qrcodegen_Ecc_HIGH;
+  qr_surface.qr.attr.mask        = qrcodegen_Mask_AUTO;
+  qr_surface.qr.attr.version_min = qrcodegen_VERSION_MIN;
+  qr_surface.qr.attr.version_max = qrcodegen_VERSION_MAX;
+  qr_surface.qr.attr.boost_ecc   = 0;
+
+  qr_surface.attr.background = (SDL_Color){255, 255, 255, 255};
+  qr_surface.attr.foreground = (SDL_Color){0, 0, 0, 255};
+
   if (text_input_arg->count > 0) {
     safe_strcpy(text_input, MAX_TEXT_INPUT, text_input_arg->sval[0]);
     if (text_input == NULL) {
@@ -139,18 +192,112 @@ int main(int argc, char** argv) {
     }
   }
 
-  printf("%s\n", text_input);
+  if (qr_level_arg->count > 0) {
+    char* level_str = strdup(qr_level_arg->sval[0]);
 
-  QrSurface qr_surface;
-  qr_surface.qr.attr.input       = text_input;
-  qr_surface.qr.attr.level       = qrcodegen_Ecc_HIGH;
-  qr_surface.qr.attr.mask        = qrcodegen_Mask_AUTO;
-  qr_surface.qr.attr.version_min = 1;
-  qr_surface.qr.attr.version_max = 40;
-  qr_surface.qr.attr.boost_ecc   = 1;
+    str_tolower(level_str);
 
-  qr_surface.attr.background = (SDL_Color){255, 255, 255, 255};
-  qr_surface.attr.foreground = (SDL_Color){0, 0, 0, 255};
+    if (strcmp(level_str, "l") == 0 || strcmp(level_str, "low") == 0) {
+      qr_surface.qr.attr.level = qrcodegen_Ecc_LOW;
+    } else if (strcmp(level_str, "m") == 0 || strcmp(level_str, "medium") == 0) {
+      qr_surface.qr.attr.level = qrcodegen_Ecc_MEDIUM;
+    } else if (strcmp(level_str, "q") == 0 || strcmp(level_str, "quartile") == 0) {
+      qr_surface.qr.attr.level = qrcodegen_Ecc_QUARTILE;
+    } else if (strcmp(level_str, "h") == 0 || strcmp(level_str, "high") == 0) {
+      qr_surface.qr.attr.level = qrcodegen_Ecc_HIGH;
+    } else {
+      printf("Invalid Error Correction Level: %s\n", level_str);
+      printf("Usage: %s", argv[0]);
+      arg_print_syntax(stdout, argtable, "\n");
+      printf("This program generate QR Codes.\n");
+      arg_print_glossary(stdout, argtable, "  %-25s %s\n");
+      free(level_str);
+      return 1;
+    }
+
+    free(level_str);
+  }
+
+  if (qr_mask_arg->count > 0) {
+    int qr_mask = *qr_mask_arg->ival;
+    if (qr_mask < 0 || qr_mask > qrcodegen_Mask_7) {
+      printf("Invalid Mask: %d\n", qr_mask);
+      printf("Usage: %s", argv[0]);
+      arg_print_syntax(stdout, argtable, "\n");
+      printf("This program generate QR Codes.\n");
+      arg_print_glossary(stdout, argtable, "  %-25s %s\n");
+      return 1;
+    }
+    qr_surface.qr.attr.mask = qr_mask;
+  }
+
+  if (qr_boost_arg->count > 0) {
+    qr_surface.qr.attr.boost_ecc = 1;
+  }
+
+  if (qr_min_arg->count > 0) {
+    int qr_min = *qr_min_arg->ival;
+    if (qr_min < 1 || qr_min > 40) {
+      printf("Invalid Min Version: %d\n", qr_min);
+      printf("Usage: %s", argv[0]);
+      arg_print_syntax(stdout, argtable, "\n");
+      printf("This program generate QR Codes.\n");
+      arg_print_glossary(stdout, argtable, "  %-25s %s\n");
+      return 1;
+    }
+    qr_surface.qr.attr.version_min = qr_min;
+  }
+
+  if (qr_max_arg->count > 0) {
+    int qr_max = *qr_max_arg->ival;
+    if (qr_max < 1 || qr_max > 40) {
+      printf("Invalid Min Version: %d\n", qr_max);
+      printf("Usage: %s", argv[0]);
+      arg_print_syntax(stdout, argtable, "\n");
+      printf("This program generate QR Codes.\n");
+      arg_print_glossary(stdout, argtable, "  %-25s %s\n");
+      return 1;
+    }
+    qr_surface.qr.attr.version_max = qr_max;
+  }
+
+  if (qr_surface.qr.attr.version_min > qr_surface.qr.attr.version_max) {
+    printf("Invalid Version: %d(min) > %d(max)\n", qr_surface.qr.attr.version_min, qr_surface.qr.attr.version_max);
+    printf("Usage: %s", argv[0]);
+    arg_print_syntax(stdout, argtable, "\n");
+    printf("This program generate QR Codes.\n");
+    arg_print_glossary(stdout, argtable, "  %-25s %s\n");
+    return 1;
+  }
+
+  if (qr_fg_color_arg->count > 0) {
+    const char* fg_str = qr_fg_color_arg->sval[0];
+
+    if (!parse_color(fg_str, &qr_surface.attr.foreground)) {
+      printf("here 4\n");
+      printf("Invalid Color: %s\n", fg_str);
+      printf("Usage: %s", argv[0]);
+      arg_print_syntax(stdout, argtable, "\n");
+      printf("This program generate QR Codes.\n");
+      arg_print_glossary(stdout, argtable, "  %-25s %s\n");
+      return 1;
+    }
+  }
+
+  if (qr_bg_color_arg->count > 0) {
+    const char* bg_str = qr_bg_color_arg->sval[0];
+
+    if (!parse_color(bg_str, &qr_surface.attr.background)) {
+      printf("here 4\n");
+      printf("Invalid Color: %s\n", bg_str);
+      printf("Usage: %s", argv[0]);
+      arg_print_syntax(stdout, argtable, "\n");
+      printf("This program generate QR Codes.\n");
+      arg_print_glossary(stdout, argtable, "  %-25s %s\n");
+      return 1;
+    }
+  }
+
   // qr_surface.attr.size       = 37*10;
 
   if (createQrCodeSurfaceScale(&qr_surface, 10.0) < 0) {
