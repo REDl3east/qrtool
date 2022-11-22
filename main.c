@@ -123,6 +123,19 @@ bool parse_color(const char* input, SDL_Color* color) {
   return true;
 }
 
+void print_err(void* argtable, const char* prog, const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+  vfprintf(stderr, format, args);
+  va_end(args);
+
+  fprintf(stderr, "Usage: %s", prog);
+  arg_print_syntax(stdout, argtable, "\n");
+  fprintf(stderr, "This program generate QR Codes.\n");
+  arg_print_glossary(stdout, argtable, "  %-25s %s\n");
+  arg_freetable(argtable, sizeof(argtable) / sizeof(argtable[0]));
+}
+
 int main(int argc, char** argv) {
   struct arg_str* text_input_arg  = arg_str0("t", "text-input", "INPUT", "The input text that will be used to generate the QR code");
   struct arg_str* qr_level_arg    = arg_str0("z", "error-correction-level", "LEVEL", "The Error Correction Level of the QR Code. [LOW | MEDIUM | QUARTILE | HIGH | L | M | Q | H] (Default is high)");
@@ -206,11 +219,7 @@ int main(int argc, char** argv) {
     } else if (strcmp(level_str, "h") == 0 || strcmp(level_str, "high") == 0) {
       qr_surface.qr.attr.level = qrcodegen_Ecc_HIGH;
     } else {
-      printf("Invalid Error Correction Level: %s\n", level_str);
-      printf("Usage: %s", argv[0]);
-      arg_print_syntax(stdout, argtable, "\n");
-      printf("This program generate QR Codes.\n");
-      arg_print_glossary(stdout, argtable, "  %-25s %s\n");
+      print_err(argtable, argv[0], "Invalid Error Correction Level: %s\n", level_str);
       free(level_str);
       return 1;
     }
@@ -221,11 +230,7 @@ int main(int argc, char** argv) {
   if (qr_mask_arg->count > 0) {
     int qr_mask = *qr_mask_arg->ival;
     if (qr_mask < 0 || qr_mask > qrcodegen_Mask_7) {
-      printf("Invalid Mask: %d\n", qr_mask);
-      printf("Usage: %s", argv[0]);
-      arg_print_syntax(stdout, argtable, "\n");
-      printf("This program generate QR Codes.\n");
-      arg_print_glossary(stdout, argtable, "  %-25s %s\n");
+      print_err(argtable, argv[0], "Invalid Mask: %d\n", qr_mask);
       return 1;
     }
     qr_surface.qr.attr.mask = qr_mask;
@@ -238,11 +243,7 @@ int main(int argc, char** argv) {
   if (qr_min_arg->count > 0) {
     int qr_min = *qr_min_arg->ival;
     if (qr_min < 1 || qr_min > 40) {
-      printf("Invalid Min Version: %d\n", qr_min);
-      printf("Usage: %s", argv[0]);
-      arg_print_syntax(stdout, argtable, "\n");
-      printf("This program generate QR Codes.\n");
-      arg_print_glossary(stdout, argtable, "  %-25s %s\n");
+      print_err(argtable, argv[0], "Invalid Min Version: %d\n", qr_min);
       return 1;
     }
     qr_surface.qr.attr.version_min = qr_min;
@@ -251,22 +252,14 @@ int main(int argc, char** argv) {
   if (qr_max_arg->count > 0) {
     int qr_max = *qr_max_arg->ival;
     if (qr_max < 1 || qr_max > 40) {
-      printf("Invalid Min Version: %d\n", qr_max);
-      printf("Usage: %s", argv[0]);
-      arg_print_syntax(stdout, argtable, "\n");
-      printf("This program generate QR Codes.\n");
-      arg_print_glossary(stdout, argtable, "  %-25s %s\n");
+      print_err(argtable, argv[0], "Invalid Min Version: %d\n", qr_max);
       return 1;
     }
     qr_surface.qr.attr.version_max = qr_max;
   }
 
   if (qr_surface.qr.attr.version_min > qr_surface.qr.attr.version_max) {
-    printf("Invalid Version: %d(min) > %d(max)\n", qr_surface.qr.attr.version_min, qr_surface.qr.attr.version_max);
-    printf("Usage: %s", argv[0]);
-    arg_print_syntax(stdout, argtable, "\n");
-    printf("This program generate QR Codes.\n");
-    arg_print_glossary(stdout, argtable, "  %-25s %s\n");
+    print_err(argtable, argv[0], "Invalid Version: %d(min) > %d(max)\n", qr_surface.qr.attr.version_min, qr_surface.qr.attr.version_max);
     return 1;
   }
 
@@ -274,12 +267,7 @@ int main(int argc, char** argv) {
     const char* fg_str = qr_fg_color_arg->sval[0];
 
     if (!parse_color(fg_str, &qr_surface.attr.foreground)) {
-      printf("here 4\n");
-      printf("Invalid Color: %s\n", fg_str);
-      printf("Usage: %s", argv[0]);
-      arg_print_syntax(stdout, argtable, "\n");
-      printf("This program generate QR Codes.\n");
-      arg_print_glossary(stdout, argtable, "  %-25s %s\n");
+      print_err(argtable, argv[0], "Invalid Color: %s\n", fg_str);
       return 1;
     }
   }
@@ -288,12 +276,7 @@ int main(int argc, char** argv) {
     const char* bg_str = qr_bg_color_arg->sval[0];
 
     if (!parse_color(bg_str, &qr_surface.attr.background)) {
-      printf("here 4\n");
-      printf("Invalid Color: %s\n", bg_str);
-      printf("Usage: %s", argv[0]);
-      arg_print_syntax(stdout, argtable, "\n");
-      printf("This program generate QR Codes.\n");
-      arg_print_glossary(stdout, argtable, "  %-25s %s\n");
+      print_err(argtable, argv[0], "Invalid Color: %s\n", bg_str);
       return 1;
     }
   }
@@ -301,18 +284,18 @@ int main(int argc, char** argv) {
   if (qr_scale_arg->count > 0) {
     int qr_scale = *qr_scale_arg->ival;
     if (createQrCodeSurfaceScale(&qr_surface, qr_scale) < 0) {
-      printf("[ERROR] createQrCodeSurface: %s\n", SDL_GetError());
+      fprintf(stderr, "[ERROR] createQrCodeSurface: %s\n", SDL_GetError());
       return 1;
     }
   } else {
     if (createQrCodeSurfaceScale(&qr_surface, 1.0) < 0) {
-      printf("[ERROR] createQrCodeSurface: %s\n", SDL_GetError());
+      fprintf(stderr, "[ERROR] createQrCodeSurface: %s\n", SDL_GetError());
       return 1;
     }
   }
 
   if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-    printf("[ERROR] %s\n", SDL_GetError());
+    fprintf(stderr, "[ERROR] %s\n", SDL_GetError());
     return 1;
   }
 
@@ -325,24 +308,24 @@ int main(int argc, char** argv) {
   SDL_Window* window = SDL_CreateWindow(APP_NAME, INITIAL_WIDTH * 0.25, INITIAL_HEIGHT * 0.25, INITIAL_WIDTH, INITIAL_HEIGHT, flags);
 
   if (!window) {
-    printf("[ERROR] SDL_CreateWindow: %s\n", SDL_GetError());
+    fprintf(stderr, "[ERROR] SDL_CreateWindow: %s\n", SDL_GetError());
     return 1;
   }
 
   SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
   if (!renderer) {
-    printf("[ERROR] SDL_CreateRenderer: %s\n", SDL_GetError());
+    fprintf(stderr, "[ERROR] SDL_CreateRenderer: %s\n", SDL_GetError());
     return 1;
   }
 
   if (SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND) < 0) {
-    printf("[ERROR] SDL_SetRenderDrawBlendMode: %s\n", SDL_GetError());
+    fprintf(stderr, "[ERROR] SDL_SetRenderDrawBlendMode: %s\n", SDL_GetError());
     return 1;
   }
 
   SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, qr_surface.surface);
   if (texture == NULL) {
-    printf("SDL_CreateTextureFromSurface: %s\n", SDL_GetError());
+    fprintf(stderr, "[ERROR] SDL_CreateTextureFromSurface: %s\n", SDL_GetError());
     return 1;
   }
 
