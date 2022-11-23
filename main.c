@@ -8,11 +8,11 @@
 #include "argtable3.h"
 #include "qrcodegen.h"
 
-static const char* APP_NAME = "SDL2 QR Code";
-static int INITIAL_WIDTH    = 1280;
-static int INITIAL_HEIGHT   = 720;
-
 #define MAX_TEXT_INPUT 1024
+
+static const char* APP_NAME          = "SDL2 QR Code";
+static int ALPHA_BACKGROUND_BOX_SIZE = 8;
+
 typedef struct QrAttr {
   char* input;
   enum qrcodegen_Ecc level;
@@ -46,95 +46,13 @@ int createQrCodeSurfaceScale(QrSurface* qr_surface, float scale);
 int createQrCodeSurfaceWithSize(QrSurface* qr_surface, int size);
 void destroyQrCodeSurface(QrSurface* qr_surface);
 
-// https://stackoverflow.com/questions/41869803/what-is-the-best-alternative-to-strncpy by chqrlie
-char* safe_strcpy(char* dest, size_t size, const char* src) {
-  if (size > 0) {
-    size_t i;
-    for (i = 0; i < size - 1 && src[i]; i++) {
-      dest[i] = src[i];
-    }
-    dest[i] = '\0';
-  }
-  return dest;
-}
-
-void str_tolower(char* input) {
-  for (int i = 0; input[i]; i++) {
-    input[i] = tolower(input[i]);
-  }
-}
-
-bool ishex(char c) {
-  return c == '0' || c == '1' || c == '2' || c == '3' || c == '4' || c == '5' || c == '6' || c == '7' || c == '8' || c == '9' ||
-         c == 'a' || c == 'b' || c == 'c' || c == 'd' || c == 'e' || c == 'f';
-}
-
-bool str_ishex(const char* input) {
-  for (int i = 0; input[i]; i++) {
-    if (!ishex(tolower(input[i]))) return false;
-  }
-  return true;
-}
-
-int read_stdin(char* buffer, size_t max_size) {
-  int total_bytes_read = 0;
-  int nbytes_read      = 0;
-
-  while (1) {
-    nbytes_read = read(0, buffer + total_bytes_read, max_size - total_bytes_read);
-    total_bytes_read += nbytes_read;
-
-    if (nbytes_read == 0) {
-      buffer[total_bytes_read] = '\0';
-      break;
-    } else if (total_bytes_read >= max_size) {
-      buffer[max_size] = '\0';
-
-      // flush stdin so it doesn't pollute the terminal
-      int c;
-      while ((c = getchar()) != '\n' && c != EOF) {
-      }
-      break;
-    }
-
-    if (nbytes_read < 0) return -1;
-  }
-  return total_bytes_read;
-}
-
-bool parse_color(const char* input, SDL_Color* color) {
-  int input_len = strlen(input);
-
-  if (input_len != 9 || input[0] != '#') {
-    return false;
-  }
-
-  if (!str_ishex(input + 1)) {
-    return false;
-  }
-
-  unsigned long value = strtoul(input + 1, NULL, 16);
-
-  color->a = (value >> 0) & 0xff;
-  color->b = (value >> 8) & 0xff;
-  color->g = (value >> 16) & 0xff;
-  color->r = (value >> 24) & 0xff;
-
-  return true;
-}
-
-void print_err(void* argtable, const char* prog, const char* format, ...) {
-  va_list args;
-  va_start(args, format);
-  vfprintf(stderr, format, args);
-  va_end(args);
-
-  fprintf(stderr, "Usage: %s", prog);
-  arg_print_syntax(stdout, argtable, "\n");
-  fprintf(stderr, "This program generate QR Codes.\n");
-  arg_print_glossary(stdout, argtable, "  %-25s %s\n");
-  arg_freetable(argtable, sizeof(argtable) / sizeof(argtable[0]));
-}
+char* safe_strcpy(char* dest, size_t size, const char* src);
+void str_tolower(char* input);
+bool ishex(char c);
+bool str_ishex(const char* input);
+int read_stdin(char* buffer, size_t max_size);
+bool parse_color(const char* input, SDL_Color* color);
+void print_err(void** argtable, size_t len, const char* prog, const char* format, ...);
 
 int main(int argc, char** argv) {
   struct arg_str* text_input_arg  = arg_str0("t", "text-input", "INPUT", "The input text that will be used to generate the QR code");
@@ -151,6 +69,7 @@ int main(int argc, char** argv) {
   struct arg_lit* version = arg_lit0(NULL, "version", "print version information and exit");
   struct arg_end* end     = arg_end(20);
   void* argtable[]        = {text_input_arg, qr_level_arg, qr_mask_arg, qr_boost_arg, qr_max_arg, qr_min_arg, qr_fg_color_arg, qr_bg_color_arg, qr_scale_arg, help, version, end};
+  size_t argtable_len     = sizeof(argtable) / sizeof(argtable[0]);
 
   if (arg_nullcheck(argtable) != 0) {
     printf("%s: insufficient memory\n", argv[0]);
@@ -219,7 +138,7 @@ int main(int argc, char** argv) {
     } else if (strcmp(level_str, "h") == 0 || strcmp(level_str, "high") == 0) {
       qr_surface.qr.attr.level = qrcodegen_Ecc_HIGH;
     } else {
-      print_err(argtable, argv[0], "Invalid Error Correction Level: %s\n", level_str);
+      print_err(argtable, argtable_len, argv[0], "Invalid Error Correction Level: %s\n", level_str);
       free(level_str);
       return 1;
     }
@@ -230,7 +149,7 @@ int main(int argc, char** argv) {
   if (qr_mask_arg->count > 0) {
     int qr_mask = *qr_mask_arg->ival;
     if (qr_mask < 0 || qr_mask > qrcodegen_Mask_7) {
-      print_err(argtable, argv[0], "Invalid Mask: %d\n", qr_mask);
+      print_err(argtable, argtable_len, argv[0], "Invalid Mask: %d\n", qr_mask);
       return 1;
     }
     qr_surface.qr.attr.mask = qr_mask;
@@ -243,7 +162,7 @@ int main(int argc, char** argv) {
   if (qr_min_arg->count > 0) {
     int qr_min = *qr_min_arg->ival;
     if (qr_min < 1 || qr_min > 40) {
-      print_err(argtable, argv[0], "Invalid Min Version: %d\n", qr_min);
+      print_err(argtable, argtable_len, argv[0], "Invalid Min Version: %d\n", qr_min);
       return 1;
     }
     qr_surface.qr.attr.version_min = qr_min;
@@ -252,14 +171,14 @@ int main(int argc, char** argv) {
   if (qr_max_arg->count > 0) {
     int qr_max = *qr_max_arg->ival;
     if (qr_max < 1 || qr_max > 40) {
-      print_err(argtable, argv[0], "Invalid Min Version: %d\n", qr_max);
+      print_err(argtable, argtable_len, argv[0], "Invalid Min Version: %d\n", qr_max);
       return 1;
     }
     qr_surface.qr.attr.version_max = qr_max;
   }
 
   if (qr_surface.qr.attr.version_min > qr_surface.qr.attr.version_max) {
-    print_err(argtable, argv[0], "Invalid Version: %d(min) > %d(max)\n", qr_surface.qr.attr.version_min, qr_surface.qr.attr.version_max);
+    print_err(argtable, argtable_len, argv[0], "Invalid Version: %d(min) > %d(max)\n", qr_surface.qr.attr.version_min, qr_surface.qr.attr.version_max);
     return 1;
   }
 
@@ -267,7 +186,7 @@ int main(int argc, char** argv) {
     const char* fg_str = qr_fg_color_arg->sval[0];
 
     if (!parse_color(fg_str, &qr_surface.attr.foreground)) {
-      print_err(argtable, argv[0], "Invalid Color: %s\n", fg_str);
+      print_err(argtable, argtable_len, argv[0], "Invalid Color: %s\n", fg_str);
       return 1;
     }
   }
@@ -276,7 +195,7 @@ int main(int argc, char** argv) {
     const char* bg_str = qr_bg_color_arg->sval[0];
 
     if (!parse_color(bg_str, &qr_surface.attr.background)) {
-      print_err(argtable, argv[0], "Invalid Color: %s\n", bg_str);
+      print_err(argtable, argtable_len, argv[0], "Invalid Color: %s\n", bg_str);
       return 1;
     }
   }
@@ -305,7 +224,7 @@ int main(int argc, char** argv) {
   }
 
   Uint32 flags       = SDL_WINDOW_RESIZABLE;
-  SDL_Window* window = SDL_CreateWindow(APP_NAME, INITIAL_WIDTH * 0.25, INITIAL_HEIGHT * 0.25, INITIAL_WIDTH, INITIAL_HEIGHT, flags);
+  SDL_Window* window = SDL_CreateWindow(APP_NAME, 0, 0, qr_surface.attr.size, qr_surface.attr.size, flags);
 
   if (!window) {
     fprintf(stderr, "[ERROR] SDL_CreateWindow: %s\n", SDL_GetError());
@@ -318,10 +237,10 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  if (SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND) < 0) {
-    fprintf(stderr, "[ERROR] SDL_SetRenderDrawBlendMode: %s\n", SDL_GetError());
-    return 1;
-  }
+  // if (SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND) < 0) {
+  //   fprintf(stderr, "[ERROR] SDL_SetRenderDrawBlendMode: %s\n", SDL_GetError());
+  //   return 1;
+  // }
 
   SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, qr_surface.surface);
   if (texture == NULL) {
@@ -370,10 +289,25 @@ int main(int argc, char** argv) {
     SDL_SetRenderDrawColor(renderer, 0xe2, 0x7d, 0x60, 255);
     SDL_RenderClear(renderer);
 
-    // rgb(102,102,102) dark gray
-    // rgb(153,153,153) lighter gray
+    int index = 0;
 
-    SDL_Rect r2 = {0.5 * (INITIAL_WIDTH - qr_surface.attr.size), 0.5 * (INITIAL_HEIGHT - qr_surface.attr.size), qr_surface.attr.size, qr_surface.attr.size};
+    for (int x = 0; x < (qr_surface.attr.size / ALPHA_BACKGROUND_BOX_SIZE) + 2; x++) {
+      for (int y = 0; y < (qr_surface.attr.size / ALPHA_BACKGROUND_BOX_SIZE) + 2; y++) {
+        SDL_Rect r1 = {x * ALPHA_BACKGROUND_BOX_SIZE, y * ALPHA_BACKGROUND_BOX_SIZE, ALPHA_BACKGROUND_BOX_SIZE, ALPHA_BACKGROUND_BOX_SIZE};
+
+        if (index % 2 == 0) {
+          SDL_SetRenderDrawColor(renderer, 102, 102, 102, 255);
+        } else {
+          SDL_SetRenderDrawColor(renderer, 153, 153, 153, 255);
+        }
+
+        SDL_RenderFillRect(renderer, &r1);
+        index++;
+      }
+      index++;
+    }
+
+    SDL_Rect r2 = {0, 0, qr_surface.attr.size, qr_surface.attr.size};
 
     SDL_RenderCopy(renderer, texture, NULL, &r2);
 
@@ -454,4 +388,95 @@ int createQrCodeSurfaceWithSize(QrSurface* qr_surface, int size) {
 void destroyQrCodeSurface(QrSurface* qr_surface) {
   SDL_FreeSurface(qr_surface->surface);
   qr_surface->surface = NULL;
+}
+
+// https://stackoverflow.com/questions/41869803/what-is-the-best-alternative-to-strncpy by chqrlie
+char* safe_strcpy(char* dest, size_t size, const char* src) {
+  if (size > 0) {
+    size_t i;
+    for (i = 0; i < size - 1 && src[i]; i++) {
+      dest[i] = src[i];
+    }
+    dest[i] = '\0';
+  }
+  return dest;
+}
+
+void str_tolower(char* input) {
+  for (int i = 0; input[i]; i++) {
+    input[i] = tolower(input[i]);
+  }
+}
+
+bool ishex(char c) {
+  return c == '0' || c == '1' || c == '2' || c == '3' || c == '4' || c == '5' || c == '6' || c == '7' || c == '8' || c == '9' ||
+         c == 'a' || c == 'b' || c == 'c' || c == 'd' || c == 'e' || c == 'f';
+}
+
+bool str_ishex(const char* input) {
+  for (int i = 0; input[i]; i++) {
+    if (!ishex(tolower(input[i]))) return false;
+  }
+  return true;
+}
+
+int read_stdin(char* buffer, size_t max_size) {
+  int total_bytes_read = 0;
+  int nbytes_read      = 0;
+
+  while (1) {
+    nbytes_read = read(0, buffer + total_bytes_read, max_size - total_bytes_read);
+    total_bytes_read += nbytes_read;
+
+    if (nbytes_read == 0) {
+      buffer[total_bytes_read] = '\0';
+      break;
+    } else if (total_bytes_read >= max_size) {
+      buffer[max_size] = '\0';
+
+      // flush stdin so it doesn't pollute the terminal
+      int c;
+      while ((c = getchar()) != '\n' && c != EOF) {
+      }
+      break;
+    }
+
+    if (nbytes_read < 0) return -1;
+  }
+  return total_bytes_read;
+}
+
+bool parse_color(const char* input, SDL_Color* color) {
+  int input_len = strlen(input);
+
+  if (input_len != 9 || input[0] != '#') {
+    return false;
+  }
+
+  if (!str_ishex(input + 1)) {
+    return false;
+  }
+
+  unsigned long value = strtoul(input + 1, NULL, 16);
+
+  color->a = (value >> 0) & 0xff;
+  color->b = (value >> 8) & 0xff;
+  color->g = (value >> 16) & 0xff;
+  color->r = (value >> 24) & 0xff;
+
+  return true;
+}
+
+void print_err(void** argtable, size_t len, const char* prog, const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+  vfprintf(stderr, format, args);
+  va_end(args);
+
+  fprintf(stderr, "Usage: %s", prog);
+  arg_print_syntax(stdout, argtable, "\n");
+  fprintf(stderr, "This program generate QR Codes.\n");
+  arg_print_glossary(stdout, argtable, "  %-25s %s\n");
+  printf("%lu\n", len);
+  arg_freetable(argtable, len);
 }
