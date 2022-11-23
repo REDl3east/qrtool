@@ -39,5 +39,5 @@ A command line tool that generates cool qr codes.
 
 ### Thoughts
 
-* Draw background so we can see transparency
+* Make scale option have decimal abilities.
 * Have a batch option for multiple text input.
