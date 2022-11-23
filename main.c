@@ -224,7 +224,7 @@ int main(int argc, char** argv) {
   }
 
   Uint32 flags       = SDL_WINDOW_RESIZABLE;
-  SDL_Window* window = SDL_CreateWindow(APP_NAME, 0, 0, qr_surface.attr.size, qr_surface.attr.size, flags);
+  SDL_Window* window = SDL_CreateWindow(APP_NAME, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, qr_surface.attr.size, qr_surface.attr.size, flags);
 
   if (!window) {
     fprintf(stderr, "[ERROR] SDL_CreateWindow: %s\n", SDL_GetError());
