@@ -65,7 +65,7 @@ int main(int argc, char** argv) {
   struct arg_int* qr_min_arg      = arg_int0("n", "version-min-range", "NUM", "The min version of the QR code. (1-40 and if absent, default to 1)");
   struct arg_str* qr_fg_color_arg = arg_str0("f", "foreground-color", "COLOR", "The foreground color of the QR code. Use hex notation: #RRGGBBAA (Default is black)");
   struct arg_str* qr_bg_color_arg = arg_str0("b", "background-color", "COLOR", "The background color of the QR code. Use hex notation: #RRGGBBAA (Default is white");
-  struct arg_int* qr_scale_arg    = arg_int0("s", "scale", "NUM", "The scale of the outputted qr code. (Default is 1)");
+  struct arg_str* qr_scale_arg    = arg_str0("s", "scale", "FLOAT", "The scale of the outputted qr code. (Default is 1.0)");
   struct arg_file* qr_out_arg     = arg_file1("o", "output", "FILE", "The outputted image of the QR code.");
   struct arg_lit* qr_verify_arg   = arg_lit0("v", "verify", "Show the image before saving the image. Press 'Y' to save image and 'N' to cancel saving.");
 
@@ -217,7 +217,9 @@ int main(int argc, char** argv) {
 
   float qr_scale = 1.0;
   if (qr_scale_arg->count > 0) {
-    qr_scale = *qr_scale_arg->ival;
+    const char* qr_scale_str = qr_scale_arg->sval[0];
+    qr_scale                 = atof(qr_scale_str);
+    if (qr_scale < 1.0) qr_scale = 1.0;
     if (createQrCodeSurfaceScale(&qr_surface, qr_scale) < 0) {
       fprintf(stderr, "[ERROR] createQrCodeSurface: %s\n", SDL_GetError());
       return 1;
@@ -232,7 +234,7 @@ int main(int argc, char** argv) {
   printf("Generated QR code [%dx%d]\n\n", qr_surface.qr.size, qr_surface.qr.size);
 
   if (IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG) {
-    printf("[ERROR] IMG_Init: %s\n", IMG_GetError());
+    fprintf(stderr, "[ERROR] IMG_Init: %s\n", IMG_GetError());
     return 1;
   }
 
@@ -334,20 +336,25 @@ int main(int argc, char** argv) {
 
       if (IMG_SavePNG(qr_surface.surface, qr_out_arg->filename[0]) < 0) {
         fprintf(stderr, "Failed to save %s\n", qr_out_arg->filename[0]);
+
+        arg_freetable(argtable, sizeof(argtable) / sizeof(argtable[0]));
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
       } else {
         printf("Generated %s\n", qr_out_arg->filename[0]);
       }
-    }else{
+    } else {
       printf("Cancelled\n");
     }
-
-    arg_freetable(argtable, sizeof(argtable) / sizeof(argtable[0]));
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
   }
 
+  arg_freetable(argtable, sizeof(argtable) / sizeof(argtable[0]));
   destroyQrCodeSurface(&qr_surface);
   IMG_Quit();
 
