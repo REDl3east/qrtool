@@ -224,7 +224,7 @@ int main(int argc, char** argv) {
   }
 
   Uint32 flags       = SDL_WINDOW_RESIZABLE;
-  SDL_Window* window = SDL_CreateWindow(APP_NAME, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, qr_surface.attr.size, qr_surface.attr.size, flags);
+  SDL_Window* window = SDL_CreateWindow(APP_NAME, 0, 0, qr_surface.attr.size, qr_surface.attr.size, flags);
 
   if (!window) {
     fprintf(stderr, "[ERROR] SDL_CreateWindow: %s\n", SDL_GetError());
@@ -289,22 +289,27 @@ int main(int argc, char** argv) {
     SDL_SetRenderDrawColor(renderer, 0xe2, 0x7d, 0x60, 255);
     SDL_RenderClear(renderer);
 
-    int index = 0;
-
-    for (int x = 0; x < (qr_surface.attr.size / ALPHA_BACKGROUND_BOX_SIZE) + 2; x++) {
-      for (int y = 0; y < (qr_surface.attr.size / ALPHA_BACKGROUND_BOX_SIZE) + 2; y++) {
+    for (int x = 0; x < (qr_surface.attr.size / ALPHA_BACKGROUND_BOX_SIZE) + 1; x++) {
+      for (int y = 0; y < (qr_surface.attr.size / ALPHA_BACKGROUND_BOX_SIZE) + 1; y++) {
         SDL_Rect r1 = {x * ALPHA_BACKGROUND_BOX_SIZE, y * ALPHA_BACKGROUND_BOX_SIZE, ALPHA_BACKGROUND_BOX_SIZE, ALPHA_BACKGROUND_BOX_SIZE};
 
-        if (index % 2 == 0) {
-          SDL_SetRenderDrawColor(renderer, 102, 102, 102, 255);
+        if (x % 2 == 0) {
+          if (y % 2 == 0) {
+            SDL_SetRenderDrawColor(renderer, 102, 102, 102, 255);
+          } else {
+            SDL_SetRenderDrawColor(renderer, 153, 153, 153, 255);
+          }
         } else {
-          SDL_SetRenderDrawColor(renderer, 153, 153, 153, 255);
+          if (y % 2 == 0) {
+            SDL_SetRenderDrawColor(renderer, 153, 153, 153, 255);
+          } else {
+            SDL_SetRenderDrawColor(renderer, 102, 102, 102, 255);
+          }
         }
 
         SDL_RenderFillRect(renderer, &r1);
-        index++;
       }
-      index++;
+
     }
 
     SDL_Rect r2 = {0, 0, qr_surface.attr.size, qr_surface.attr.size};
