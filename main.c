@@ -336,11 +336,6 @@ int main(int argc, char** argv) {
 
       if (IMG_SavePNG(qr_surface.surface, qr_out_arg->filename[0]) < 0) {
         fprintf(stderr, "Failed to save %s\n", qr_out_arg->filename[0]);
-
-        arg_freetable(argtable, sizeof(argtable) / sizeof(argtable[0]));
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
         return 1;
       } else {
         printf("Generated %s\n", qr_out_arg->filename[0]);
