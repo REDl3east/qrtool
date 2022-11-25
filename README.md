@@ -33,11 +33,11 @@ A command line tool that generates cool qr codes.
 
 -s, --scale (The scale of the outputted qr code. Default is 1)  
 
--o, --output (Input can be outputted to an image file (png, jpeg, etc) or if this option is absent, then it will be outputted to stdout. If -e is absent, then the extension is inferred from the given string. If no extension is found, then it is set to a default, probably PPM6.)
--e, --extension [PNG | JPEG | etc] (Extension of the file. Use this without -o option and the binary data will be outputted to stdout.)    
+-o, --output (Input can be outputted to an image file (png, jpeg, etc) or if this option is absent, then it will be outputted to stdout. If -e is absent, then the extension is inferred from the given string. If no extension is found, then it is set to a default, probably PPM6.)  
 -v, --verify  (View the image in a window without saving it in any way. Pressing 'y' will save then quit, and 'n' will quit.)   
 
 ### Thoughts
 
+* Add quiet option
 * Make scale option have decimal abilities.
 * Have a batch option for multiple text input.
