@@ -69,12 +69,13 @@ int main(int argc, char** argv) {
   struct arg_str* qr_scale_arg    = arg_str0("s", "scale", "FLOAT", "The scale of the outputted qr code. (Default is 1.0)");
   struct arg_file* qr_out_arg     = arg_file1("o", "output", "FILE", "The outputted image of the QR code.");
   struct arg_lit* qr_verify_arg   = arg_lit0("v", "verify", "Show the image before saving the image. Press 'Y' to save image and 'N' to cancel saving.");
+  struct arg_lit* qr_quiet_arg    = arg_lit0("q", "quiet", "Only output text if there is an error. --help and --version will still output text.");
 
   struct arg_lit* help    = arg_lit0(NULL, "help", "print this help and exit");
   struct arg_lit* version = arg_lit0(NULL, "version", "print version information and exit");
   struct arg_end* end     = arg_end(20);
 
-  void* argtable[]    = {text_input_arg, qr_level_arg, qr_mask_arg, qr_boost_arg, qr_max_arg, qr_min_arg, qr_fg_color_arg, qr_bg_color_arg, qr_scale_arg, qr_out_arg, qr_verify_arg, help, version, end};
+  void* argtable[]    = {text_input_arg, qr_level_arg, qr_mask_arg, qr_boost_arg, qr_max_arg, qr_min_arg, qr_fg_color_arg, qr_bg_color_arg, qr_scale_arg, qr_out_arg, qr_verify_arg, qr_quiet_arg, help, version, end};
   size_t argtable_len = sizeof(argtable) / sizeof(argtable[0]);
 
   if (arg_nullcheck(argtable) != 0) {
@@ -205,17 +206,19 @@ int main(int argc, char** argv) {
     }
   }
 
-  printf("Generating QR code with attributes:\n");
-  printf("   Input:       %s\n", qr_surface.qr.attr.input);
-  printf("   ECC Level:   %d\n", qr_surface.qr.attr.level);
-  if (qr_surface.qr.attr.mask != -1) {
-    printf("   Mask:        %d\n", qr_surface.qr.attr.mask);
-  } else {
-    printf("   Mask:        auto\n");
+  if (qr_quiet_arg->count <= 0) {
+    printf("Generating QR code with attributes:\n");
+    printf("   Input:       %s\n", qr_surface.qr.attr.input);
+    printf("   ECC Level:   %d\n", qr_surface.qr.attr.level);
+    if (qr_surface.qr.attr.mask != -1) {
+      printf("   Mask:        %d\n", qr_surface.qr.attr.mask);
+    } else {
+      printf("   Mask:        auto\n");
+    }
+    printf("   Version Min: %d\n", qr_surface.qr.attr.version_min);
+    printf("   Version Max: %d\n", qr_surface.qr.attr.version_max);
+    printf("   Boost ECC:   %s\n", qr_surface.qr.attr.boost_ecc ? "true" : "false");
   }
-  printf("   Version Min: %d\n", qr_surface.qr.attr.version_min);
-  printf("   Version Max: %d\n", qr_surface.qr.attr.version_max);
-  printf("   Boost ECC:   %s\n", qr_surface.qr.attr.boost_ecc ? "true" : "false");
 
   float qr_scale = 1.0;
   if (qr_scale_arg->count > 0) {
@@ -235,7 +238,7 @@ int main(int argc, char** argv) {
 
   ////////////////////////////////////////////////////////
 
-  printf("Generated QR code [%dx%d]\n\n", qr_surface.qr.size, qr_surface.qr.size);
+  if (qr_quiet_arg->count <= 0) printf("Generated QR code [%dx%d]\n\n", qr_surface.qr.size, qr_surface.qr.size);
 
   if (IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG) {
     fprintf(stderr, "[ERROR] IMG_Init: %s\n", IMG_GetError());
@@ -247,8 +250,10 @@ int main(int argc, char** argv) {
   bool qr_save = true;
 
   if (qr_verify_arg->count > 0) {
-    printf("Verifying...\n");
-    printf("Press 'y' to save image (%s) then quit, or press 'n' to quit\n\n", qr_out_arg->filename[0]);
+    if (qr_quiet_arg->count <= 0) {
+      printf("Verifying...\n");
+      printf("Press 'y' to save image (%s) then quit, or press 'n' to quit\n\n", qr_out_arg->filename[0]);
+    }
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
       fprintf(stderr, "[ERROR] %s\n", SDL_GetError());
@@ -356,11 +361,13 @@ int main(int argc, char** argv) {
   }
 
   if (qr_save) {
-    printf("Generating %s with attributes:\n", qr_out_arg->filename[0]);
-    printf("   Scale:      %f\n", qr_scale);
-    printf("   Size:       %d\n", qr_surface.surface->w);
-    printf("   Foreground: RGBA(%d, %d, %d, %d)\n", qr_surface.attr.foreground.r, qr_surface.attr.foreground.g, qr_surface.attr.foreground.b, qr_surface.attr.foreground.a);
-    printf("   Background: RGBA(%d, %d, %d, %d)\n", qr_surface.attr.background.r, qr_surface.attr.background.g, qr_surface.attr.background.b, qr_surface.attr.background.a);
+    if (qr_quiet_arg->count <= 0) {
+      printf("Generating %s with attributes:\n", qr_out_arg->filename[0]);
+      printf("   Scale:      %f\n", qr_scale);
+      printf("   Size:       %d\n", qr_surface.surface->w);
+      printf("   Foreground: RGBA(%d, %d, %d, %d)\n", qr_surface.attr.foreground.r, qr_surface.attr.foreground.g, qr_surface.attr.foreground.b, qr_surface.attr.foreground.a);
+      printf("   Background: RGBA(%d, %d, %d, %d)\n", qr_surface.attr.background.r, qr_surface.attr.background.g, qr_surface.attr.background.b, qr_surface.attr.background.a);
+    }
 
     if (IMG_SavePNG(qr_surface.surface, qr_out_arg->filename[0]) < 0) {
       fprintf(stderr, "Failed to save %s\n", qr_out_arg->filename[0]);
@@ -369,10 +376,12 @@ int main(int argc, char** argv) {
       IMG_Quit();
       return 1;
     } else {
-      printf("Generated %s\n", qr_out_arg->filename[0]);
+      if (qr_quiet_arg->count <= 0)
+        printf("Generated %s\n", qr_out_arg->filename[0]);
     }
   } else {
-    printf("Cancelled\n");
+    if (qr_quiet_arg->count <= 0)
+      printf("Cancelled\n");
   }
 
   arg_freetable(argtable, sizeof(argtable) / sizeof(argtable[0]));

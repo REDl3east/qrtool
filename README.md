@@ -38,5 +38,4 @@ A command line tool that generates cool qr codes.
 
 ### Thoughts
 
-* Add quiet option
 * Have a batch option for multiple text input.
