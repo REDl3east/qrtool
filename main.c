@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
   struct arg_str* qr_bg_color_arg = arg_str0("b", "background-color", "COLOR", "The background color of the QR code. Use hex notation: #RRGGBBAA (Default is white");
   struct arg_str* qr_scale_arg    = arg_str0("s", "scale", "FLOAT", "The scale of the outputted qr code. (Default is 1.0)");
   struct arg_file* qr_out_arg     = arg_file1("o", "output", "FILE", "The outputted image of the QR code.");
-  struct arg_lit* qr_verify_arg   = arg_lit0("v", "verify", "Show the image before saving the image. Press 'Y' to save image and 'N' to cancel saving.");
+  struct arg_lit* qr_verify_arg   = arg_lit0("v", "verify", "Show the image before saving the image. Press 'y' to save image and 'n' to cancel saving.");
   struct arg_lit* qr_quiet_arg    = arg_lit0("q", "quiet", "Only output text if there is an error. --help and --version will still output text.");
 
   struct arg_lit* help    = arg_lit0(NULL, "help", "print this help and exit");
