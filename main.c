@@ -53,6 +53,7 @@ bool str_ishex(const char* input);
 int read_stdin(char* buffer, size_t max_size);
 bool parse_color(const char* input, SDL_Color* color);
 void print_err(void** argtable, size_t len, const char* prog, const char* format, ...);
+void free_argtable(void** argtable, size_t len);
 
 int main(int argc, char** argv) {
   char text_input[MAX_TEXT_INPUT];
@@ -72,11 +73,12 @@ int main(int argc, char** argv) {
   struct arg_lit* help    = arg_lit0(NULL, "help", "print this help and exit");
   struct arg_lit* version = arg_lit0(NULL, "version", "print version information and exit");
   struct arg_end* end     = arg_end(20);
-  void* argtable[]        = {text_input_arg, qr_level_arg, qr_mask_arg, qr_boost_arg, qr_max_arg, qr_min_arg, qr_fg_color_arg, qr_bg_color_arg, qr_scale_arg, qr_out_arg, qr_verify_arg, help, version, end};
-  size_t argtable_len     = sizeof(argtable) / sizeof(argtable[0]);
+
+  void* argtable[]    = {text_input_arg, qr_level_arg, qr_mask_arg, qr_boost_arg, qr_max_arg, qr_min_arg, qr_fg_color_arg, qr_bg_color_arg, qr_scale_arg, qr_out_arg, qr_verify_arg, help, version, end};
+  size_t argtable_len = sizeof(argtable) / sizeof(argtable[0]);
 
   if (arg_nullcheck(argtable) != 0) {
-    printf("%s: insufficient memory\n", argv[0]);
+    fprintf(stderr, "[ERROR] %s: insufficient memory\n", argv[0]);
     return 1;
   }
 
@@ -141,7 +143,7 @@ int main(int argc, char** argv) {
     } else if (strcmp(level_str, "h") == 0 || strcmp(level_str, "high") == 0) {
       qr_surface.qr.attr.level = qrcodegen_Ecc_HIGH;
     } else {
-      print_err(argtable, argtable_len, argv[0], "Invalid Error Correction Level: %s\n", level_str);
+      print_err(argtable, argtable_len, argv[0], "[ERROR] Invalid Error Correction Level: %s\n", level_str);
       free(level_str);
       return 1;
     }
@@ -152,7 +154,7 @@ int main(int argc, char** argv) {
   if (qr_mask_arg->count > 0) {
     int qr_mask = *qr_mask_arg->ival;
     if (qr_mask < 0 || qr_mask > qrcodegen_Mask_7) {
-      print_err(argtable, argtable_len, argv[0], "Invalid Mask: %d\n", qr_mask);
+      print_err(argtable, argtable_len, argv[0], "[ERROR] Invalid Mask: %d\n", qr_mask);
       return 1;
     }
     qr_surface.qr.attr.mask = qr_mask;
@@ -165,7 +167,7 @@ int main(int argc, char** argv) {
   if (qr_min_arg->count > 0) {
     int qr_min = *qr_min_arg->ival;
     if (qr_min < 1 || qr_min > 40) {
-      print_err(argtable, argtable_len, argv[0], "Invalid Min Version: %d\n", qr_min);
+      print_err(argtable, argtable_len, argv[0], "[ERROR] Invalid Min Version: %d\n", qr_min);
       return 1;
     }
     qr_surface.qr.attr.version_min = qr_min;
@@ -174,14 +176,14 @@ int main(int argc, char** argv) {
   if (qr_max_arg->count > 0) {
     int qr_max = *qr_max_arg->ival;
     if (qr_max < 1 || qr_max > 40) {
-      print_err(argtable, argtable_len, argv[0], "Invalid Min Version: %d\n", qr_max);
+      print_err(argtable, argtable_len, argv[0], "[ERROR] Invalid Min Version: %d\n", qr_max);
       return 1;
     }
     qr_surface.qr.attr.version_max = qr_max;
   }
 
   if (qr_surface.qr.attr.version_min > qr_surface.qr.attr.version_max) {
-    print_err(argtable, argtable_len, argv[0], "Invalid Version: %d(min) > %d(max)\n", qr_surface.qr.attr.version_min, qr_surface.qr.attr.version_max);
+    print_err(argtable, argtable_len, argv[0], "[ERROR] Invalid Version: %d(min) > %d(max)\n", qr_surface.qr.attr.version_min, qr_surface.qr.attr.version_max);
     return 1;
   }
 
@@ -189,7 +191,7 @@ int main(int argc, char** argv) {
     const char* fg_str = qr_fg_color_arg->sval[0];
 
     if (!parse_color(fg_str, &qr_surface.attr.foreground)) {
-      print_err(argtable, argtable_len, argv[0], "Invalid Color: %s\n", fg_str);
+      print_err(argtable, argtable_len, argv[0], "[ERROR] Invalid Color: %s\n", fg_str);
       return 1;
     }
   }
@@ -198,22 +200,22 @@ int main(int argc, char** argv) {
     const char* bg_str = qr_bg_color_arg->sval[0];
 
     if (!parse_color(bg_str, &qr_surface.attr.background)) {
-      print_err(argtable, argtable_len, argv[0], "Invalid Color: %s\n", bg_str);
+      print_err(argtable, argtable_len, argv[0], "[ERROR] Invalid Color: %s\n", bg_str);
       return 1;
     }
   }
 
   printf("Generating QR code with attributes:\n");
-  printf("   -Input:       %s\n", qr_surface.qr.attr.input);
-  printf("   -ECC Level:   %d\n", qr_surface.qr.attr.level);
+  printf("   Input:       %s\n", qr_surface.qr.attr.input);
+  printf("   ECC Level:   %d\n", qr_surface.qr.attr.level);
   if (qr_surface.qr.attr.mask != -1) {
-    printf("   -Mask:        %d\n", qr_surface.qr.attr.mask);
+    printf("   Mask:        %d\n", qr_surface.qr.attr.mask);
   } else {
-    printf("   -Mask:        auto\n");
+    printf("   Mask:        auto\n");
   }
-  printf("   -Version Min: %d\n", qr_surface.qr.attr.version_min);
-  printf("   -Version Max: %d\n", qr_surface.qr.attr.version_max);
-  printf("   -Boost ECC:   %s\n", qr_surface.qr.attr.boost_ecc ? "true" : "false");
+  printf("   Version Min: %d\n", qr_surface.qr.attr.version_min);
+  printf("   Version Max: %d\n", qr_surface.qr.attr.version_max);
+  printf("   Boost ECC:   %s\n", qr_surface.qr.attr.boost_ecc ? "true" : "false");
 
   float qr_scale = 1.0;
   if (qr_scale_arg->count > 0) {
@@ -221,20 +223,24 @@ int main(int argc, char** argv) {
     qr_scale                 = atof(qr_scale_str);
     if (qr_scale < 1.0) qr_scale = 1.0;
     if (createQrCodeSurfaceScale(&qr_surface, qr_scale) < 0) {
-      fprintf(stderr, "[ERROR] createQrCodeSurface: %s\n", SDL_GetError());
+      print_err(argtable, argtable_len, "[ERROR] createQrCodeSurface: %s\n", SDL_GetError());
       return 1;
     }
   } else {
     if (createQrCodeSurfaceScale(&qr_surface, 1.0) < 0) {
-      fprintf(stderr, "[ERROR] createQrCodeSurface: %s\n", SDL_GetError());
+      print_err(argtable, argtable_len, "[ERROR] createQrCodeSurface: %s\n", SDL_GetError());
       return 1;
     }
   }
+
+  ////////////////////////////////////////////////////////
 
   printf("Generated QR code [%dx%d]\n\n", qr_surface.qr.size, qr_surface.qr.size);
 
   if (IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG) {
     fprintf(stderr, "[ERROR] IMG_Init: %s\n", IMG_GetError());
+    free_argtable(argtable, argtable_len);
+    destroyQrCodeSurface(&qr_surface);
     return 1;
   }
 
@@ -246,6 +252,9 @@ int main(int argc, char** argv) {
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
       fprintf(stderr, "[ERROR] %s\n", SDL_GetError());
+      free_argtable(argtable, argtable_len);
+      destroyQrCodeSurface(&qr_surface);
+      IMG_Quit();
       return 1;
     }
 
@@ -254,18 +263,33 @@ int main(int argc, char** argv) {
 
     if (!window) {
       fprintf(stderr, "[ERROR] SDL_CreateWindow: %s\n", SDL_GetError());
+      free_argtable(argtable, argtable_len);
+      destroyQrCodeSurface(&qr_surface);
+      IMG_Quit();
+      SDL_Quit();
       return 1;
     }
 
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     if (!renderer) {
       fprintf(stderr, "[ERROR] SDL_CreateRenderer: %s\n", SDL_GetError());
+      free_argtable(argtable, argtable_len);
+      destroyQrCodeSurface(&qr_surface);
+      SDL_DestroyWindow(window);
+      IMG_Quit();
+      SDL_Quit();
       return 1;
     }
 
     SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, qr_surface.surface);
     if (texture == NULL) {
       fprintf(stderr, "[ERROR] SDL_CreateTextureFromSurface: %s\n", SDL_GetError());
+      free_argtable(argtable, argtable_len);
+      destroyQrCodeSurface(&qr_surface);
+      SDL_DestroyRenderer(renderer);
+      SDL_DestroyWindow(window);
+      IMG_Quit();
+      SDL_Quit();
       return 1;
     }
 
@@ -321,32 +345,34 @@ int main(int argc, char** argv) {
       }
 
       SDL_Rect r2 = {0, 0, qr_surface.attr.size, qr_surface.attr.size};
-
       SDL_RenderCopy(renderer, texture, NULL, &r2);
-
       SDL_RenderPresent(renderer);
     }
 
-    if (qr_save) {
-      printf("Generating %s with attributes:\n", qr_out_arg->filename[0]);
-      printf("   -Scale:      %f\n", qr_scale);
-      printf("   -Size:       %d\n", qr_surface.surface->w);
-      printf("   -Foreground: RGBA(%d, %d, %d, %d)\n", qr_surface.attr.foreground.r, qr_surface.attr.foreground.g, qr_surface.attr.foreground.b, qr_surface.attr.foreground.a);
-      printf("   -Background: RGBA(%d, %d, %d, %d)\n", qr_surface.attr.background.r, qr_surface.attr.background.g, qr_surface.attr.background.b, qr_surface.attr.background.a);
-
-      if (IMG_SavePNG(qr_surface.surface, qr_out_arg->filename[0]) < 0) {
-        fprintf(stderr, "Failed to save %s\n", qr_out_arg->filename[0]);
-        return 1;
-      } else {
-        printf("Generated %s\n", qr_out_arg->filename[0]);
-      }
-    } else {
-      printf("Cancelled\n");
-    }
-
+    SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
+  }
+
+  if (qr_save) {
+    printf("Generating %s with attributes:\n", qr_out_arg->filename[0]);
+    printf("   Scale:      %f\n", qr_scale);
+    printf("   Size:       %d\n", qr_surface.surface->w);
+    printf("   Foreground: RGBA(%d, %d, %d, %d)\n", qr_surface.attr.foreground.r, qr_surface.attr.foreground.g, qr_surface.attr.foreground.b, qr_surface.attr.foreground.a);
+    printf("   Background: RGBA(%d, %d, %d, %d)\n", qr_surface.attr.background.r, qr_surface.attr.background.g, qr_surface.attr.background.b, qr_surface.attr.background.a);
+
+    if (IMG_SavePNG(qr_surface.surface, qr_out_arg->filename[0]) < 0) {
+      fprintf(stderr, "Failed to save %s\n", qr_out_arg->filename[0]);
+      free_argtable(argtable, argtable_len);
+      destroyQrCodeSurface(&qr_surface);
+      IMG_Quit();
+      return 1;
+    } else {
+      printf("Generated %s\n", qr_out_arg->filename[0]);
+    }
+  } else {
+    printf("Cancelled\n");
   }
 
   arg_freetable(argtable, sizeof(argtable) / sizeof(argtable[0]));
@@ -508,5 +534,9 @@ void print_err(void** argtable, size_t len, const char* prog, const char* format
   fprintf(stderr, "This program generate QR Codes.\n");
   arg_print_glossary(stdout, argtable, "  %-25s %s\n");
   printf("%lu\n", len);
+  arg_freetable(argtable, len);
+}
+
+void free_argtable(void** argtable, size_t len) {
   arg_freetable(argtable, len);
 }
