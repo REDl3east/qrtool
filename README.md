@@ -99,10 +99,12 @@ print version information and exit
 
 ## Dependancies
 - cmake 3.0.0+
-- SDL2
-- SDL_image
+- [SDL2](https://github.com/libsdl-org/SDL.git)
+- [SDL_image](https://github.com/libsdl-org/SDL_image.git)
+- [QR-Code-generator](https://github.com/nayuki/QR-Code-generator.git)
+- [argtable3](https://github.com/argtable/argtable3.git)
 
-Cmake will take care of SDL2 and SDL_image, so you really only need the correct cmake version! 
+Cmake will take care of all dependancies, so you really only need the correct cmake version! 
 
 <!-- 
 Thoughts:
