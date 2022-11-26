@@ -8,7 +8,7 @@
 #include "argtable3.h"
 #include "qrcodegen.h"
 
-#define MAX_TEXT_INPUT 1024
+#define MAX_TEXT_INPUT 8192
 
 static const char* APP_NAME          = "SDL2 QR Code";
 static int ALPHA_BACKGROUND_BOX_SIZE = 8;
@@ -88,14 +88,14 @@ int main(int argc, char** argv) {
   if (help->count > 0) {
     printf("Usage: %s", argv[0]);
     arg_print_syntax(stdout, argtable, "\n");
-    printf("This program generate QR Codes.\n");
+    printf("A command line tool that generates QR codes and outputs them as a PNG file.\n");
 
     arg_print_glossary(stdout, argtable, "  %-25s %s\n");
     return 0;
   }
 
   if (version->count > 0) {
-    printf("'%s' This program generate QR Codes.\n", argv[0]);
+    printf("'%s' A command line tool that generates QR codes and outputs them as a PNG file.\n", argv[0]);
     printf("2022, Dalton Overmyer\n");
     return 0;
   }
@@ -235,8 +235,6 @@ int main(int argc, char** argv) {
       return 1;
     }
   }
-
-  ////////////////////////////////////////////////////////
 
   if (qr_quiet_arg->count <= 0) printf("Generated QR code [%dx%d]\n\n", qr_surface.qr.size, qr_surface.qr.size);
 
@@ -540,7 +538,6 @@ void print_err(void** argtable, size_t len, const char* prog, const char* format
 
   fprintf(stderr, "Usage: %s", prog);
   arg_print_syntax(stdout, argtable, "\n");
-  fprintf(stderr, "This program generate QR Codes.\n");
   arg_print_glossary(stdout, argtable, "  %-25s %s\n");
   printf("%lu\n", len);
   arg_freetable(argtable, len);
