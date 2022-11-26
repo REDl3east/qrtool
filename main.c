@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
   struct arg_lit* qr_verify_arg   = arg_lit0("v", "verify", "Show the image before saving the image. Press 'y' to save image and 'n' to cancel saving.");
   struct arg_lit* qr_quiet_arg    = arg_lit0("q", "quiet", "Only output text if there is an error. --help and --version will still output text.");
 
-  struct arg_lit* help    = arg_lit0(NULL, "help", "print this help and exit");
+  struct arg_lit* help    = arg_lit0("h", "help", "print this help and exit");
   struct arg_lit* version = arg_lit0(NULL, "version", "print version information and exit");
   struct arg_end* end     = arg_end(20);
 
@@ -46,7 +46,8 @@ int main(int argc, char** argv) {
   }
 
   if (err > 0) {
-    arg_print_errors(stdout, end, argv[0]);
+    arg_print_errors(stderr, end, argv[0]);
+    fprintf(stderr, "Try %s --help for some help\n", argv[0]);
     return 1;
   }
 
