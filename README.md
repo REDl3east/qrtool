@@ -104,7 +104,7 @@ print version information and exit
 - [QR-Code-generator](https://github.com/nayuki/QR-Code-generator.git)
 - [argtable3](https://github.com/argtable/argtable3.git)
 
-Cmake will take care of all dependancies, so you really only need the correct cmake version! 
+Cmake will take care of all dependancies, so you really only need the correct cmake version to build and install.
 
 <!-- 
 Thoughts:
