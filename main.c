@@ -207,7 +207,7 @@ int main(int argc, char** argv) {
       return 1;
     }
 
-    Uint32 flags       = SDL_WINDOW_RESIZABLE;
+    Uint32 flags       = 0; // SDL_WINDOW_RESIZABLE;
     SDL_Window* window = SDL_CreateWindow(APP_NAME, 0, 0, qr_surface.attr.size, qr_surface.attr.size, flags);
 
     if (!window) {
@@ -271,25 +271,29 @@ int main(int argc, char** argv) {
       SDL_SetRenderDrawColor(renderer, 0xe2, 0x7d, 0x60, 255);
       SDL_RenderClear(renderer);
 
-      for (int x = 0; x < (qr_surface.attr.size / ALPHA_BACKGROUND_BOX_SIZE) + 1; x++) {
-        for (int y = 0; y < (qr_surface.attr.size / ALPHA_BACKGROUND_BOX_SIZE) + 1; y++) {
-          SDL_Rect r1 = {x * ALPHA_BACKGROUND_BOX_SIZE, y * ALPHA_BACKGROUND_BOX_SIZE, ALPHA_BACKGROUND_BOX_SIZE, ALPHA_BACKGROUND_BOX_SIZE};
+      bool is_transparent = qr_surface.attr.background.a < 255 || qr_surface.attr.foreground.a < 255;
 
-          if (x % 2 == 0) {
-            if (y % 2 == 0) {
-              SDL_SetRenderDrawColor(renderer, 102, 102, 102, 255);
+      if (is_transparent) {
+        for (int x = 0; x < (qr_surface.attr.size / ALPHA_BACKGROUND_BOX_SIZE) + 1; x++) {
+          for (int y = 0; y < (qr_surface.attr.size / ALPHA_BACKGROUND_BOX_SIZE) + 1; y++) {
+            SDL_Rect r1 = {x * ALPHA_BACKGROUND_BOX_SIZE, y * ALPHA_BACKGROUND_BOX_SIZE, ALPHA_BACKGROUND_BOX_SIZE, ALPHA_BACKGROUND_BOX_SIZE};
+
+            if (x % 2 == 0) {
+              if (y % 2 == 0) {
+                SDL_SetRenderDrawColor(renderer, 102, 102, 102, 255);
+              } else {
+                SDL_SetRenderDrawColor(renderer, 153, 153, 153, 255);
+              }
             } else {
-              SDL_SetRenderDrawColor(renderer, 153, 153, 153, 255);
+              if (y % 2 == 0) {
+                SDL_SetRenderDrawColor(renderer, 153, 153, 153, 255);
+              } else {
+                SDL_SetRenderDrawColor(renderer, 102, 102, 102, 255);
+              }
             }
-          } else {
-            if (y % 2 == 0) {
-              SDL_SetRenderDrawColor(renderer, 153, 153, 153, 255);
-            } else {
-              SDL_SetRenderDrawColor(renderer, 102, 102, 102, 255);
-            }
+
+            SDL_RenderFillRect(renderer, &r1);
           }
-
-          SDL_RenderFillRect(renderer, &r1);
         }
       }
 
