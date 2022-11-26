@@ -49,7 +49,8 @@ printf "%s" "What are you looking at?" | ./build/qrtool        \
 --boost-ecc                                                    \
 --output                  "./assets/example2.png" 
 
-# Input text via command line argument and verify the QR code before saving. Aslo supress any outputted text to terminal.
+# Input text via command line argument and verify the QR code before saving.
+# Also supress any outputted text to terminal.
 ./build/qrtool                                                 \
 --text-input             "This is some really long text. There once was a guy named Jim who lived in the middle of Nowhere. He lived with a nice pink dog named Aaudacious. :)" \
 --error-correction-level "high"                                \
