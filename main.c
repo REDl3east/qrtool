@@ -10,7 +10,7 @@ int main(int argc, char** argv) {
   struct arg_int* qr_max_arg      = arg_int0("x", "version-max-range", "NUM", "The max version of the QR code. (1-40 and if absent, default to 40)");
   struct arg_int* qr_min_arg      = arg_int0("n", "version-min-range", "NUM", "The min version of the QR code. (1-40 and if absent, default to 1)");
   struct arg_str* qr_fg_color_arg = arg_str0("f", "foreground-color", "COLOR", "The foreground color of the QR code. Use hex notation: #RRGGBBAA (Default is black)");
-  struct arg_str* qr_bg_color_arg = arg_str0("b", "background-color", "COLOR", "The background color of the QR code. Use hex notation: #RRGGBBAA (Default is white");
+  struct arg_str* qr_bg_color_arg = arg_str0("b", "background-color", "COLOR", "The background color of the QR code. Use hex notation: #RRGGBBAA (Default is white)");
   struct arg_str* qr_scale_arg    = arg_str0("s", "scale", "FLOAT", "The scale of the outputted qr code. (Default is 1.0)");
   struct arg_file* qr_out_arg     = arg_file1("o", "output", "FILE", "The outputted image of the QR code.");
   struct arg_lit* qr_verify_arg   = arg_lit0("v", "verify", "Show the image before saving the image. Press 'y' to save image and 'n' to cancel saving.");
@@ -31,17 +31,17 @@ int main(int argc, char** argv) {
   int err = arg_parse(argc, argv, argtable);
 
   if (help->count > 0) {
+    printf("%s - A command line tool that generates QR codes and outputs them as a PNG file.\n\n", argv[0]);
     printf("Usage: %s", argv[0]);
     arg_print_syntax(stdout, argtable, "\n");
-    printf("A command line tool that generates QR codes and outputs them as a PNG file.\n");
 
     arg_print_glossary(stdout, argtable, "  %-25s %s\n");
     return 0;
   }
 
   if (version->count > 0) {
-    printf("'%s' A command line tool that generates QR codes and outputs them as a PNG file.\n", argv[0]);
-    printf("2022, Dalton Overmyer\n");
+    printf("%s - A command line tool that generates QR codes and outputs them as a PNG file.\n", argv[0]);
+    printf("2022 (C), Dalton Overmyer\n");
     return 0;
   }
 
