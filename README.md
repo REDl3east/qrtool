@@ -15,7 +15,7 @@ A command line tool that generates QR codes and outputs them as a PNG file. You 
 # Building
 mkdir build
 cd build
-cmake .. # It may take a little bit!
+cmake -DCMAKE_BUILD_TYPE=Release .. # It may take a little bit!
 make -j 8
 
 # Installing
